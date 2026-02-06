@@ -20,5 +20,4 @@ node_modules/
 # Build output
 dist/
 
-# Generated presentations
-output/
+# Generated presentations (keeping for reference)
