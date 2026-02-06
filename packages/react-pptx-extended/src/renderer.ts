@@ -357,11 +357,28 @@ const PRESENTATION_METADATA_PROPS = [
   "subject",
   "title",
 ] as const;
+/**
+ * Recursively resolve functional components to get the actual Presentation element
+ */
+const resolveElement = (
+  node: React.ReactElement
+): React.ReactElement<PresentationProps> => {
+  // If the type is a function (functional component), call it to get the actual element
+  if (typeof node.type === 'function') {
+    const result = (node.type as Function)(node.props);
+    // Recursively resolve in case of nested functional components
+    return resolveElement(result);
+  }
+  return node as React.ReactElement<PresentationProps>;
+};
+
 export const render = async (
   node: React.ReactElement<PresentationProps>,
   opts?: RenderOptions
 ): Promise<string | Blob | ArrayBuffer | Buffer | Uint8Array> => {
-  const normalized = normalizeJsx(node);
+  // Resolve functional components to get the actual Presentation element
+  const resolvedNode = resolveElement(node);
+  const normalized = normalizeJsx(resolvedNode);
   const pres = new pptxgen();
 
   // https://gitbrent.github.io/PptxGenJS/docs/usage-pres-options/#custom-slide-layouts

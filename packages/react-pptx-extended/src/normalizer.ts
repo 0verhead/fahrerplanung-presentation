@@ -276,12 +276,19 @@ export const normalizeShadow = (shadow: ShadowProps | undefined): InternalShadow
   if (!shadow) return null;
   if (shadow.type === 'none') return null;
   
+  // Ensure color has # prefix for the color library, default to black
+  let color = '000000';
+  if (shadow.color) {
+    const colorStr = shadow.color.startsWith('#') ? shadow.color : `#${shadow.color}`;
+    color = normalizeHexColor(colorStr);
+  }
+  
   return {
     type: shadow.type ?? 'outer',
     blur: shadow.blur ?? 4,
     offset: shadow.offset ?? 3,
     angle: shadow.angle ?? 45,
-    color: shadow.color ? normalizeHexColor(shadow.color) : '000000',
+    color,
     opacity: shadow.opacity ?? 0.4,
   };
 };
@@ -292,9 +299,16 @@ export const normalizeShadow = (shadow: ShadowProps | undefined): InternalShadow
 export const normalizeGlow = (glow: GlowProps | undefined): InternalGlow => {
   if (!glow) return null;
   
+  // Ensure color has # prefix for the color library, default to yellow
+  let color = 'FFFF00';
+  if (glow.color) {
+    const colorStr = glow.color.startsWith('#') ? glow.color : `#${glow.color}`;
+    color = normalizeHexColor(colorStr);
+  }
+  
   return {
     size: glow.size ?? 8,
-    color: glow.color ? normalizeHexColor(glow.color) : 'FFFF00',
+    color,
     opacity: glow.opacity ?? 0.6,
   };
 };

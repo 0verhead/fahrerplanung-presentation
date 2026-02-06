@@ -19,3 +19,4 @@ export {
   normalizeShadow,
   normalizeGlow,
 } from "./normalizer";
+export { flattenChildren } from "./util";
