@@ -72,9 +72,9 @@ const content = {
   },
   
   features: [
-    { num: '01', title: 'Planungsalgorithmus', desc: 'Intelligente Tourenoptimierung' },
+    { num: '01', title: 'Touren-Planung', desc: 'Intelligente Routenoptimierung' },
     { num: '02', title: 'Driver App', desc: 'Intuitive mobile Bedienung' },
-    { num: '03', title: 'Web-Backoffice', desc: 'Zentrale Verwaltungsoberfläche' },
+    { num: '03', title: 'Web-Backoffice', desc: 'Zentrale Verwaltung' },
     { num: '04', title: 'API-Integration', desc: 'Nahtlose Systemanbindung' },
     { num: '05', title: 'Live-Monitoring', desc: 'Echtzeit-Flottenübersicht' },
     { num: '06', title: 'Analytics', desc: 'Automatisierte Berichte' },
@@ -394,15 +394,15 @@ const ExecutiveBlack = () => {
                 {feature.num}
               </Text>
               <Text style={{
-                x: x + 0.2, y: y + 0.6,
+                x: x + 0.2, y: y + 0.55,
                 w: cardW - 0.4, h: 0.4,
-                ...typography.h3,
+                ...typography.h4,
                 color: T.text,
               }}>
                 {feature.title}
               </Text>
               <Text style={{
-                x: x + 0.2, y: y + 1,
+                x: x + 0.2, y: y + 0.95,
                 w: cardW - 0.4, h: 0.35,
                 ...typography.bodySmall,
                 color: T.textSecondary,
@@ -825,7 +825,7 @@ const DataForward = () => {
       <Slide style={{ backgroundColor: T.bg }}>
         <Text style={{
           x: SLIDE.MARGIN.LEFT, y: 1.5,
-          w: 6, h: 1,
+          w: 9, h: 1,
           ...typography.hero,
           color: T.text,
         }}>
@@ -1173,12 +1173,12 @@ const SplitComposition = () => {
         
         {/* Orange block with text */}
         <Shape type="rect" style={{
-          x: 3.5, y: 2.5, w: 6, h: 1.3,
+          x: 2.8, y: 2.5, w: 6.7, h: 1.3,
           backgroundColor: ORANGE[500],
         }} />
         <Text style={{
-          x: 3.7, y: 2.6,
-          w: 5.6, h: 1.1,
+          x: 3, y: 2.6,
+          w: 6.3, h: 1.1,
           fontSize: 64, bold: true, fontFace: FONTS.DISPLAY,
           color: CORE.black,
         }}>
