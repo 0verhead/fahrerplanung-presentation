@@ -12,3 +12,13 @@ desktop.ini
 # Temp files
 *.tmp
 *.temp
+.context/
+
+# Node.js
+node_modules/
+
+# Build output
+dist/
+
+# Generated presentations
+output/
