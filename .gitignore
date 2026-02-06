@@ -1,0 +1,14 @@
+# PowerPoint temp files
+~$*.pptx
+~$*.ppt
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Temp files
+*.tmp
+*.temp
