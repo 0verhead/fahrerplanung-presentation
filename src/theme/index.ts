@@ -1,8 +1,17 @@
 /**
- * Theme System
- * AVEMO brand theme for presentations
+ * AVEMO Theme System
+ * 
+ * Central export for all theme-related constants and utilities.
  */
 
+// Colors
 export * from './colors';
-export * from './shadows';
+
+// Typography
 export * from './typography';
+
+// Layout & Grid
+export * from './layout';
+
+// Shadows
+export * from './shadows';
