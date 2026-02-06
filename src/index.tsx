@@ -711,26 +711,18 @@ const CleanWhite = () => {
       {/* Slide 5: Big Stat */}
       <Slide style={{ backgroundColor: T.bg }}>
         <Text style={{
-          x: SLIDE.MARGIN.LEFT, y: 1.5,
-          w: 5, h: 1.5,
+          x: SLIDE.MARGIN.LEFT, y: 1.8,
+          w: 5, h: 1.2,
           ...typography.metricLarge,
-          fontSize: 96,
+          fontSize: 64,
           color: T.text,
         }}>
-          {content.metrics.savings.value}
+          {content.metrics.savings.value}{content.metrics.savings.unit}
         </Text>
         <Text style={{
-          x: SLIDE.MARGIN.LEFT, y: 3,
-          w: 2, h: 0.6,
-          ...typography.h1,
-          color: T.accent,
-        }}>
-          {content.metrics.savings.unit}
-        </Text>
-        <Text style={{
-          x: SLIDE.MARGIN.LEFT, y: 3.7,
+          x: SLIDE.MARGIN.LEFT, y: 3.1,
           w: 5, h: 0.4,
-          ...typography.body,
+          ...typography.h2,
           color: T.textSecondary,
         }}>
           {content.metrics.savings.label}
@@ -738,20 +730,20 @@ const CleanWhite = () => {
         
         {/* Vertical divider */}
         <Shape type="rect" style={{
-          x: 5.5, y: 1.5, w: 0.02, h: 2.5,
+          x: 5.5, y: 1.8, w: 0.02, h: 2.5,
           backgroundColor: T.border,
         }} />
         
         {/* Secondary metrics */}
         <Text style={{
-          x: 6, y: 1.5, w: 3, h: 0.8,
+          x: 6, y: 1.8, w: 3, h: 0.8,
           ...typography.metric,
           color: T.text,
         }}>
           {content.metrics.waitTime.value}
         </Text>
         <Text style={{
-          x: 6, y: 2.2, w: 3, h: 0.3,
+          x: 6, y: 2.5, w: 3, h: 0.3,
           ...typography.bodySmall,
           color: T.textSecondary,
         }}>
@@ -759,14 +751,14 @@ const CleanWhite = () => {
         </Text>
         
         <Text style={{
-          x: 6, y: 3, w: 3, h: 0.8,
+          x: 6, y: 3.2, w: 3, h: 0.8,
           ...typography.metric,
           color: T.text,
         }}>
           {content.metrics.efficiency.value}%
         </Text>
         <Text style={{
-          x: 6, y: 3.7, w: 3, h: 0.3,
+          x: 6, y: 3.9, w: 3, h: 0.3,
           ...typography.bodySmall,
           color: T.textSecondary,
         }}>
@@ -1289,15 +1281,15 @@ const SplitComposition = () => {
           <React.Fragment key={i}>
             <Text style={{
               x: 1.8, y: 2.6 + i * 0.45,
-              w: 2, h: 0.3,
+              w: 3, h: 0.3,
               ...typography.h4,
               color: ORANGE[500],
             }}>
               {s.title}
             </Text>
             <Text style={{
-              x: 3.8, y: 2.6 + i * 0.45,
-              w: 4, h: 0.3,
+              x: 4.8, y: 2.6 + i * 0.45,
+              w: 3.2, h: 0.3,
               ...typography.bodySmall,
               color: GRAY[600],
             }}>
