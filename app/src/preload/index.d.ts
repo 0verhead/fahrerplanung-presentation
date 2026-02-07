@@ -3,7 +3,9 @@ import type {
   AIProviderConfig,
   AIStreamEvent,
   ChatMessage,
-  TsxChangedEvent
+  TsxChangedEvent,
+  SlidePreviewState,
+  SlidesUpdatedEvent
 } from '../shared/types/ai'
 
 /** AI API exposed from the preload script */
@@ -18,6 +20,9 @@ interface EncoreAIApi {
   getTsx(): Promise<{ code: string }>
   setTsx(code: string): Promise<{ success: boolean }>
   onTsxChanged(callback: (event: TsxChangedEvent) => void): () => void
+  getSlides(): Promise<SlidePreviewState>
+  onSlidesUpdated(callback: (event: SlidesUpdatedEvent) => void): () => void
+  triggerCompile(): Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

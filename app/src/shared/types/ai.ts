@@ -98,7 +98,13 @@ export const AI_IPC_CHANNELS = {
   /** Renderer -> Main: set TSX source (from user edits) */
   SET_TSX: 'ai:set-tsx',
   /** Main -> Renderer: TSX code has changed (from AI or compilation) */
-  TSX_CHANGED: 'ai:tsx-changed'
+  TSX_CHANGED: 'ai:tsx-changed',
+  /** Main -> Renderer: Slide preview data updated (after compilation) */
+  SLIDES_UPDATED: 'ai:slides-updated',
+  /** Renderer -> Main: get current slide preview data */
+  GET_SLIDES: 'ai:get-slides',
+  /** Renderer -> Main: trigger manual compilation */
+  TRIGGER_COMPILE: 'ai:trigger-compile'
 } as const
 
 // ---------------------------------------------------------------------------
@@ -113,6 +119,46 @@ export interface TsxChangedEvent {
   source: 'ai' | 'user' | 'initial'
   /** Optional: the previous code (for diff view) */
   previousCode?: string
+}
+
+// ---------------------------------------------------------------------------
+// Slide preview types
+// ---------------------------------------------------------------------------
+
+/** A single slide thumbnail */
+export interface SlideThumbnail {
+  /** 0-based slide index */
+  slideIndex: number
+  /** base64-encoded PNG data URI */
+  dataUri: string
+  /** Slide width in pixels (for aspect ratio) */
+  width: number
+  /** Slide height in pixels */
+  height: number
+}
+
+/** Current state of the slide preview */
+export interface SlidePreviewState {
+  /** Whether slides are available */
+  hasSlides: boolean
+  /** Whether compilation is in progress */
+  isCompiling: boolean
+  /** Number of slides */
+  slideCount: number
+  /** Slide thumbnails (may be empty if not yet compiled) */
+  slides: SlideThumbnail[]
+  /** Last compilation error (if any) */
+  error?: string
+  /** Compilation warnings */
+  warnings?: string[]
+  /** Path to the generated PPTX file */
+  pptxPath?: string
+}
+
+/** Event emitted when slide previews are updated */
+export interface SlidesUpdatedEvent {
+  /** The new slide preview state */
+  state: SlidePreviewState
 }
 
 // ---------------------------------------------------------------------------

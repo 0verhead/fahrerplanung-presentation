@@ -4,7 +4,7 @@ title: standalone-ai-pptx-gen
 status: in-progress
 priority: high
 created: 2026-02-07T00:00:00.000Z
-updated: 2026-02-07T10:00:00.000Z
+updated: 2026-02-07T11:00:00.000Z
 ---
 
 ## Summary
@@ -148,7 +148,7 @@ Encore is a standalone Electron desktop app that provides a Cursor-like AI-power
 - [x] **Multi-step agent loop** — Configure `maxSteps` for autonomous chaining. AI should be able to: analyze user request -> plan design direction -> write TSX -> compile -> check slide previews -> self-correct issues -> present final result. Handle tool errors gracefully with retry logic.
 - [x] **Chat panel** — Build conversation UI with `useChat()` and `react-markdown@10.1.0`: message list, markdown rendering, code blocks, streaming response display, tool-call status indicators ("Compiling slides...", "Reading file..."), input box. Style per app design system with Tailwind 4.
 - [x] **Code editor panel** — Integrate `@monaco-editor/react@4.7.0` with `monaco-editor@0.55.1`. TSX syntax highlighting, sync with AI-written code, user-editable. Diff view for AI changes. Cursor-like accept/reject for AI edits.
-- [ ] **Slide preview panel** — Render compiled slide PNGs. Auto-update on recompilation. Zoom, slide navigation, error display. Styled with app design system.
+- [x] **Slide preview panel** — Render compiled slide PNGs. Auto-update on recompilation. Zoom, slide navigation, error display. Styled with app design system.
 - [ ] **Panel layout & micro-interactions** — Resizable three-panel layout with Cursor-like code panel toggle. Motion via CSS transitions/animations. Follow frontend-design skill for spatial composition.
 - [ ] **PPTX compilation engine** — Wrap `react-pptx-extended` render pipeline. TSX string -> transpile via `esbuild@0.27.3` -> execute in sandboxed context with React 18 (isolated from app's React 19) -> render to PPTX Buffer + per-slide PNGs. Worker/subprocess to avoid blocking UI.
 - [ ] **State management** — Set up `zustand@5.0.11` stores: conversation state, editor state (current TSX, dirty flag), project state (save/load), settings state (API keys, model, preferences).

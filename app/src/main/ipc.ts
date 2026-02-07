@@ -18,8 +18,14 @@ import {
 } from './ai-service'
 import { clearProviderCache } from './ai-provider-registry'
 import { getCurrentTsx, setTsx, onTsxChange } from './tool-handlers'
+import { getSlidePreviewState, onSlidePreviewStateChange } from './slide-preview-state'
 import { AI_IPC_CHANNELS } from '../shared/types/ai'
-import type { SendMessagePayload, SetProviderPayload, TsxChangedEvent } from '../shared/types/ai'
+import type {
+  SendMessagePayload,
+  SetProviderPayload,
+  TsxChangedEvent,
+  SlidesUpdatedEvent
+} from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -98,6 +104,35 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
       win.webContents.send(AI_IPC_CHANNELS.TSX_CHANGED, event)
     }
   })
+
+  // --- Get current slide preview state ---
+  ipcMain.handle(AI_IPC_CHANNELS.GET_SLIDES, async () => {
+    return getSlidePreviewState()
+  })
+
+  // --- Trigger manual compilation ---
+  ipcMain.handle(AI_IPC_CHANNELS.TRIGGER_COMPILE, async () => {
+    // TODO: Wire up to actual compilation engine in "PPTX compilation engine" task
+    // For now, return a stub response indicating compilation is not yet available
+    const hasTsx = getCurrentTsx().trim().length > 0
+    if (!hasTsx) {
+      return { success: false, error: 'No presentation code to compile' }
+    }
+    return {
+      success: false,
+      error:
+        'Compilation engine not yet implemented. TSX source is saved and ready for compilation.'
+    }
+  })
+
+  // --- Register callback to forward slide preview updates to renderer ---
+  onSlidePreviewStateChange((state) => {
+    const win = getMainWindow()
+    if (win && !win.isDestroyed()) {
+      const event: SlidesUpdatedEvent = { state }
+      win.webContents.send(AI_IPC_CHANNELS.SLIDES_UPDATED, event)
+    }
+  })
 }
 
 /**
@@ -112,4 +147,6 @@ export function removeAIIpcHandlers(): void {
   ipcMain.removeHandler(AI_IPC_CHANNELS.GET_HISTORY)
   ipcMain.removeHandler(AI_IPC_CHANNELS.GET_TSX)
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_TSX)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.GET_SLIDES)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.TRIGGER_COMPILE)
 }

@@ -7,7 +7,9 @@ import type {
   ChatMessage,
   SendMessagePayload,
   SetProviderPayload,
-  TsxChangedEvent
+  TsxChangedEvent,
+  SlidePreviewState,
+  SlidesUpdatedEvent
 } from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
@@ -100,6 +102,34 @@ const aiApi = {
     return () => {
       ipcRenderer.removeListener(AI_IPC_CHANNELS.TSX_CHANGED, handler)
     }
+  },
+
+  /**
+   * Get the current slide preview state.
+   */
+  async getSlides(): Promise<SlidePreviewState> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_SLIDES)
+  },
+
+  /**
+   * Register a callback for slide preview updates.
+   * Returns an unsubscribe function.
+   */
+  onSlidesUpdated(callback: (event: SlidesUpdatedEvent) => void): () => void {
+    const handler = (_event: Electron.IpcRendererEvent, slidesEvent: SlidesUpdatedEvent): void => {
+      callback(slidesEvent)
+    }
+    ipcRenderer.on(AI_IPC_CHANNELS.SLIDES_UPDATED, handler)
+    return () => {
+      ipcRenderer.removeListener(AI_IPC_CHANNELS.SLIDES_UPDATED, handler)
+    }
+  },
+
+  /**
+   * Trigger a manual compilation.
+   */
+  async triggerCompile(): Promise<{ success: boolean; error?: string }> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.TRIGGER_COMPILE)
   }
 }
 

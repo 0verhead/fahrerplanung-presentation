@@ -400,3 +400,60 @@
 - Monaco worker files are bundled by Vite — no manual configuration needed
 - The diff view is read-only; user must accept/reject, then edit in normal mode
 - Renderer bundle size increased to ~890KB due to Monaco — could be optimized with dynamic imports if needed
+
+---
+
+## Task 9: Slide preview panel (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Created comprehensive SlidePreviewPanel component with:
+  - Empty state when no slides are compiled
+  - Loading state during initial load
+  - Compiling state with spinner animation
+  - Error state with retry button for compilation failures
+  - Slide thumbnails display with current slide highlighted
+  - Zoom controls (Fit, 50%, 75%, 100%, 150%)
+  - Navigation controls (prev/next with keyboard-style icons)
+  - Thumbnail strip at bottom for quick slide navigation
+  - Warnings banner for compilation warnings
+- Added IPC infrastructure for slide preview state:
+  - `SlidePreviewState` and `SlideThumbnail` types in shared types
+  - `GET_SLIDES`, `SLIDES_UPDATED`, `TRIGGER_COMPILE` IPC channels
+  - `slide-preview-state.ts` module in main process for state management
+  - IPC handlers for getting slides and triggering compilation
+  - Preload API methods: `getSlides()`, `onSlidesUpdated()`, `triggerCompile()`
+- Updated App.tsx to use SlidePreviewPanel instead of placeholder
+
+### Key decisions
+- **State management pattern**: Created `slide-preview-state.ts` module with callback-based notification (like `tool-handlers.ts` pattern) rather than importing from tool-handlers to keep concerns separated
+- **Zoom levels**: Chose practical zoom levels (fit, 50%, 75%, 100%, 150%) with "Fit" as default for best initial viewing experience
+- **Thumbnail strip**: Added bottom thumbnail strip that only appears when multiple slides exist — provides quick visual navigation
+- **Compile button**: Added manual "Compile" button in toolbar for user-triggered recompilation
+- **Stub compile**: The `TRIGGER_COMPILE` handler returns a stub response since compilation engine isn't implemented yet
+- **Error handling**: Error state shows helpful message and retry button; warnings are shown in a collapsible banner
+
+### Files created
+- `app/src/main/slide-preview-state.ts` — Slide preview state management
+- `app/src/renderer/src/components/preview/SlidePreviewPanel.tsx` — Main slide preview component (~400 lines)
+- `app/src/renderer/src/components/preview/index.ts` — Barrel export
+
+### Files modified
+- `app/src/shared/types/ai.ts` — Added `SlidePreviewState`, `SlideThumbnail`, `SlidesUpdatedEvent` types; added `GET_SLIDES`, `SLIDES_UPDATED`, `TRIGGER_COMPILE` IPC channels
+- `app/src/main/ipc.ts` — Added handlers for slide preview IPC channels
+- `app/src/preload/index.ts` — Added `getSlides()`, `onSlidesUpdated()`, `triggerCompile()` methods
+- `app/src/preload/index.d.ts` — Added types for new API methods
+- `app/src/renderer/src/App.tsx` — Replaced placeholder with SlidePreviewPanel component
+
+### Verification
+- `npm run lint` — PASS (zero issues after lint:fix)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (main 48.16kB, preload 4.28kB, renderer 907.36kB)
+
+### Notes for next iteration
+- The SlidePreviewPanel is fully functional but shows empty/stub state until the "PPTX compilation engine" task is implemented
+- The "Panel layout & micro-interactions" task will add resizable split panes between the three panels
+- The slide thumbnail strip uses `h-12` height for compact display; could be made configurable
+- Zoom uses inline styles for flexibility; could be optimized with CSS classes if performance is a concern
+- The compile button is always visible in the toolbar — provides clear action for users
