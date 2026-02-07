@@ -4,7 +4,7 @@ title: standalone-ai-pptx-gen
 status: in-progress
 priority: high
 created: 2026-02-07T00:00:00.000Z
-updated: 2026-02-07T09:15:00.000Z
+updated: 2026-02-07T10:30:00.000Z
 ---
 
 ## Summary
@@ -153,7 +153,7 @@ Encore is a standalone Electron desktop app that provides a Cursor-like AI-power
 - [x] **PPTX compilation engine** — Wrap `react-pptx-extended` render pipeline. TSX string -> transpile via `esbuild@0.27.3` -> execute in sandboxed context with React 18 (isolated from app's React 19) -> render to PPTX Buffer + per-slide PNGs. Worker/subprocess to avoid blocking UI.
 - [x] **State management** — Set up `zustand@5.0.11` stores: conversation state, editor state (current TSX, dirty flag), project state (save/load), settings state (API keys, model, preferences).
 - [x] **Theme & brand system** — Generalize `src/theme/` into pluggable brand kit. Default neutral theme. User provides brand info via chat or settings -> AI incorporates. Themes follow frontend-design skill.
-- [ ] **File export & auto-open** — Export `.pptx` to chosen path via Electron dialog. Auto-open with `shell.openPath()`. Optional PDF export via headless LibreOffice.
+- [x] **File export & auto-open** — Export `.pptx` to chosen path via Electron dialog. Auto-open with `shell.openPath()`. Optional PDF export via headless LibreOffice.
 - [ ] **Settings & configuration** — API key management (OpenRouter, Anthropic, OpenAI). Model selection dropdown. Export directory. Theme/brand prefs. Persist via `electron-store` or JSON file. Styled per design system.
 - [ ] **Project/session management** — Save/load projects: conversation history (`CoreMessage[]`), TSX source, generated files. Recent projects list. Auto-save on changes. Store in user data directory.
 

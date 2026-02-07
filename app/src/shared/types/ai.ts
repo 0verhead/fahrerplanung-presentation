@@ -114,7 +114,17 @@ export const AI_IPC_CHANNELS = {
   /** Renderer -> Main: set theme variant */
   SET_THEME_VARIANT: 'ai:set-theme-variant',
   /** Renderer -> Main: get theme variant */
-  GET_THEME_VARIANT: 'ai:get-theme-variant'
+  GET_THEME_VARIANT: 'ai:get-theme-variant',
+  /** Renderer -> Main: export PPTX with save dialog */
+  EXPORT_PPTX: 'ai:export-pptx',
+  /** Renderer -> Main: export as PDF with save dialog */
+  EXPORT_PDF: 'ai:export-pdf',
+  /** Renderer -> Main: open PPTX file with system app */
+  OPEN_PPTX: 'ai:open-pptx',
+  /** Renderer -> Main: reveal file in system file explorer */
+  REVEAL_IN_FINDER: 'ai:reveal-in-finder',
+  /** Renderer -> Main: check if PDF export is available */
+  IS_PDF_EXPORT_AVAILABLE: 'ai:is-pdf-export-available'
 } as const
 
 // ---------------------------------------------------------------------------
@@ -218,4 +228,57 @@ export interface SetBrandKitPayload {
 /** Payload for ai:set-theme-variant */
 export interface SetThemeVariantPayload {
   variant: 'dark' | 'light'
+}
+
+// ---------------------------------------------------------------------------
+// Export types
+// ---------------------------------------------------------------------------
+
+/** Payload for ai:export-pptx */
+export interface ExportPptxPayload {
+  /** Path to the source PPTX file (from compilation) */
+  sourcePath: string
+  /** Suggested filename (without path) */
+  suggestedName?: string
+  /** Whether to auto-open after export (default: true) */
+  autoOpen?: boolean
+}
+
+/** Response for ai:export-pptx */
+export interface ExportPptxResponse {
+  success: boolean
+  /** Path where the file was saved */
+  exportedPath?: string
+  /** Error message if failed */
+  error?: string
+  /** Whether the file was opened */
+  opened?: boolean
+}
+
+/** Payload for ai:export-pdf */
+export interface ExportPdfPayload {
+  /** Path to the source PPTX file */
+  sourcePath: string
+  /** Suggested filename (without path) */
+  suggestedName?: string
+  /** Whether to auto-open after export (default: true) */
+  autoOpen?: boolean
+}
+
+/** Response for ai:export-pdf */
+export interface ExportPdfResponse {
+  success: boolean
+  exportedPath?: string
+  error?: string
+  opened?: boolean
+}
+
+/** Payload for ai:open-pptx */
+export interface OpenPptxPayload {
+  filePath: string
+}
+
+/** Payload for ai:reveal-in-finder */
+export interface RevealInFinderPayload {
+  filePath: string
 }

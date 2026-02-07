@@ -20,6 +20,13 @@ import {
   setThemeVariant,
   getCurrentThemeVariant
 } from './ai-service'
+import {
+  exportPptx,
+  exportPdf,
+  openPptx,
+  revealInFinder,
+  isLibreOfficeAvailable
+} from './export-service'
 import { clearProviderCache } from './ai-provider-registry'
 import { getCurrentTsx, setTsx, onTsxChange } from './tool-handlers'
 import {
@@ -36,7 +43,11 @@ import type {
   SetBrandKitPayload,
   SetThemeVariantPayload,
   TsxChangedEvent,
-  SlidesUpdatedEvent
+  SlidesUpdatedEvent,
+  ExportPptxPayload,
+  ExportPdfPayload,
+  OpenPptxPayload,
+  RevealInFinderPayload
 } from '../shared/types/ai'
 import { getAllBrandKitMeta } from '../shared/brand'
 
@@ -213,6 +224,39 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
       return { success: true }
     }
   )
+
+  // --- Export PPTX with save dialog ---
+  ipcMain.handle(AI_IPC_CHANNELS.EXPORT_PPTX, async (_event, payload: ExportPptxPayload) => {
+    return exportPptx({
+      sourcePath: payload.sourcePath,
+      suggestedName: payload.suggestedName,
+      autoOpen: payload.autoOpen
+    })
+  })
+
+  // --- Export as PDF with save dialog ---
+  ipcMain.handle(AI_IPC_CHANNELS.EXPORT_PDF, async (_event, payload: ExportPdfPayload) => {
+    return exportPdf({
+      sourcePath: payload.sourcePath,
+      suggestedName: payload.suggestedName,
+      autoOpen: payload.autoOpen
+    })
+  })
+
+  // --- Open PPTX file with system app ---
+  ipcMain.handle(AI_IPC_CHANNELS.OPEN_PPTX, async (_event, payload: OpenPptxPayload) => {
+    return openPptx(payload.filePath)
+  })
+
+  // --- Reveal file in system file explorer ---
+  ipcMain.on(AI_IPC_CHANNELS.REVEAL_IN_FINDER, (_event, payload: RevealInFinderPayload) => {
+    revealInFinder(payload.filePath)
+  })
+
+  // --- Check if PDF export is available ---
+  ipcMain.handle(AI_IPC_CHANNELS.IS_PDF_EXPORT_AVAILABLE, async () => {
+    return { available: await isLibreOfficeAvailable() }
+  })
 }
 
 /**
@@ -221,6 +265,7 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
 export function removeAIIpcHandlers(): void {
   ipcMain.removeAllListeners(AI_IPC_CHANNELS.SEND_MESSAGE)
   ipcMain.removeAllListeners(AI_IPC_CHANNELS.ABORT)
+  ipcMain.removeAllListeners(AI_IPC_CHANNELS.REVEAL_IN_FINDER)
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_PROVIDER)
   ipcMain.removeHandler(AI_IPC_CHANNELS.GET_PROVIDER)
   ipcMain.removeHandler(AI_IPC_CHANNELS.CLEAR_HISTORY)
@@ -234,4 +279,8 @@ export function removeAIIpcHandlers(): void {
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_BRAND_KIT)
   ipcMain.removeHandler(AI_IPC_CHANNELS.GET_THEME_VARIANT)
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_THEME_VARIANT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.EXPORT_PPTX)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.EXPORT_PDF)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.OPEN_PPTX)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.IS_PDF_EXPORT_AVAILABLE)
 }

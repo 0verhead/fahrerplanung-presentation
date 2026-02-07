@@ -683,3 +683,55 @@
 - Custom brand kits can be registered via `registerBrandKit()` — could be exposed through a brand editor UI
 - The old `src/theme/` directory contains AVEMO-specific colors — consider removing or migrating to a custom brand kit
 - The AI can now incorporate brand kits automatically — when users provide brand info via chat, the AI should update the active brand kit
+
+---
+
+## Task 14: File export & auto-open (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Created comprehensive export service (`app/src/main/export-service.ts`) with:
+  - `exportPptx()` — Shows native save dialog, copies PPTX to user-selected location, auto-opens file
+  - `exportPdf()` — Optional PDF export via LibreOffice headless mode
+  - `openPptx()` — Opens PPTX with system default application via `shell.openPath()`
+  - `revealInFinder()` — Reveals file in system file explorer via `shell.showItemInFolder()`
+  - `isLibreOfficeAvailable()` — Checks if PDF export is available
+  - `quickExport()` — Quick export without dialog to "Encore Exports" folder
+- Added 5 new IPC channels: `EXPORT_PPTX`, `EXPORT_PDF`, `OPEN_PPTX`, `REVEAL_IN_FINDER`, `IS_PDF_EXPORT_AVAILABLE`
+- Added corresponding types: `ExportPptxPayload`, `ExportPptxResponse`, `ExportPdfPayload`, `ExportPdfResponse`, etc.
+- Updated preload script with new export API methods
+- Added export dropdown menu to SlidePreviewPanel toolbar with:
+  - "Save as .pptx" button
+  - "Save as .pdf" button (uses LibreOffice)
+  - "Open in PowerPoint" button
+  - "Show in Folder" button
+  - Loading state during export
+
+### Key decisions
+- **Native dialogs**: Uses Electron's `dialog.showSaveDialog()` for proper OS-native experience
+- **Auto-open by default**: Files are automatically opened after export (can be disabled via parameter)
+- **PDF via LibreOffice**: PDF export requires LibreOffice to be installed; graceful error if unavailable
+- **Dropdown menu**: Export options in a dropdown menu to avoid toolbar clutter
+- **shell.openPath()**: Returns empty string on success, error message on failure — handles this properly
+
+### Files created
+- `app/src/main/export-service.ts` — Export service with all file operations (~280 lines)
+
+### Files modified
+- `app/src/shared/types/ai.ts` — Added export IPC channels and types
+- `app/src/main/ipc.ts` — Added IPC handlers for all export operations
+- `app/src/preload/index.ts` — Added export API methods
+- `app/src/preload/index.d.ts` — Added export method type declarations
+- `app/src/renderer/src/components/preview/SlidePreviewPanel.tsx` — Added export dropdown with icons and handlers
+
+### Verification
+- `npm run build` — PASS (main 176.65kB, preload 7.57kB, renderer 944.76kB)
+- `npm run lint` — PASS (zero issues after lint:fix)
+- `npm run format:check` — PASS
+
+### Notes for next iteration
+- PDF export requires LibreOffice installation; could add a check and helpful message in UI
+- The export dropdown closes when clicking outside or selecting an option
+- Default export location is the user's Documents folder with timestamp suffix
+- Quick export goes to "~/Documents/Encore Exports/" for programmatic use

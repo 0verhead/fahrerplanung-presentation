@@ -12,7 +12,13 @@ import type {
   TsxChangedEvent,
   SlidePreviewState,
   SlidesUpdatedEvent,
-  GetBrandKitsResponse
+  GetBrandKitsResponse,
+  ExportPptxPayload,
+  ExportPptxResponse,
+  ExportPdfPayload,
+  ExportPdfResponse,
+  OpenPptxPayload,
+  RevealInFinderPayload
 } from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
@@ -174,6 +180,59 @@ const aiApi = {
   async setThemeVariant(variant: 'dark' | 'light'): Promise<{ success: boolean }> {
     const payload: SetThemeVariantPayload = { variant }
     return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_THEME_VARIANT, payload)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Export API
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Export PPTX to a user-selected location.
+   * Shows a native save dialog and optionally opens the file.
+   */
+  async exportPptx(
+    sourcePath: string,
+    suggestedName?: string,
+    autoOpen?: boolean
+  ): Promise<ExportPptxResponse> {
+    const payload: ExportPptxPayload = { sourcePath, suggestedName, autoOpen }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.EXPORT_PPTX, payload)
+  },
+
+  /**
+   * Export as PDF to a user-selected location.
+   * Requires LibreOffice to be installed.
+   */
+  async exportPdf(
+    sourcePath: string,
+    suggestedName?: string,
+    autoOpen?: boolean
+  ): Promise<ExportPdfResponse> {
+    const payload: ExportPdfPayload = { sourcePath, suggestedName, autoOpen }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.EXPORT_PDF, payload)
+  },
+
+  /**
+   * Open a PPTX file with the system default application.
+   */
+  async openPptx(filePath: string): Promise<{ success: boolean; error?: string }> {
+    const payload: OpenPptxPayload = { filePath }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.OPEN_PPTX, payload)
+  },
+
+  /**
+   * Reveal a file in the system file explorer.
+   */
+  revealInFinder(filePath: string): void {
+    const payload: RevealInFinderPayload = { filePath }
+    ipcRenderer.send(AI_IPC_CHANNELS.REVEAL_IN_FINDER, payload)
+  },
+
+  /**
+   * Check if PDF export is available (requires LibreOffice).
+   */
+  async isPdfExportAvailable(): Promise<{ available: boolean }> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.IS_PDF_EXPORT_AVAILABLE)
   }
 }
 

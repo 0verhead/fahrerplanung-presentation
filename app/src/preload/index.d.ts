@@ -6,7 +6,9 @@ import type {
   TsxChangedEvent,
   SlidePreviewState,
   SlidesUpdatedEvent,
-  GetBrandKitsResponse
+  GetBrandKitsResponse,
+  ExportPptxResponse,
+  ExportPdfResponse
 } from '../shared/types/ai'
 
 /** AI API exposed from the preload script */
@@ -36,6 +38,21 @@ interface EncoreAIApi {
   setBrandKit(brandKitId: string): Promise<{ success: boolean }>
   getThemeVariant(): Promise<{ variant: 'dark' | 'light' }>
   setThemeVariant(variant: 'dark' | 'light'): Promise<{ success: boolean }>
+
+  // Export
+  exportPptx(
+    sourcePath: string,
+    suggestedName?: string,
+    autoOpen?: boolean
+  ): Promise<ExportPptxResponse>
+  exportPdf(
+    sourcePath: string,
+    suggestedName?: string,
+    autoOpen?: boolean
+  ): Promise<ExportPdfResponse>
+  openPptx(filePath: string): Promise<{ success: boolean; error?: string }>
+  revealInFinder(filePath: string): void
+  isPdfExportAvailable(): Promise<{ available: boolean }>
 }
 
 declare global {

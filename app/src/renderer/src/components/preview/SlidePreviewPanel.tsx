@@ -110,6 +110,42 @@ function AlertIcon(): React.JSX.Element {
   )
 }
 
+function ExportIcon(): React.JSX.Element {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+      />
+    </svg>
+  )
+}
+
+function OpenExternalIcon(): React.JSX.Element {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+      />
+    </svg>
+  )
+}
+
+function FolderIcon(): React.JSX.Element {
+  return (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z"
+      />
+    </svg>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Zoom level utilities
 // ---------------------------------------------------------------------------
@@ -204,6 +240,56 @@ export function SlidePreviewPanel({ className = '' }: SlidePreviewPanelProps): R
       console.error('Compilation failed:', result.error)
     }
   }, [])
+
+  // ---------------------------------------------------------------------------
+  // Export handlers
+  // ---------------------------------------------------------------------------
+
+  const [isExporting, setIsExporting] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+
+  const handleExportPptx = useCallback(async () => {
+    if (!previewState.pptxPath) return
+    setIsExporting(true)
+    setShowExportMenu(false)
+    try {
+      const result = await window.api.exportPptx(previewState.pptxPath)
+      if (!result.success && result.error && !result.error.includes('cancelled')) {
+        console.error('Export failed:', result.error)
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }, [previewState.pptxPath])
+
+  const handleExportPdf = useCallback(async () => {
+    if (!previewState.pptxPath) return
+    setIsExporting(true)
+    setShowExportMenu(false)
+    try {
+      const result = await window.api.exportPdf(previewState.pptxPath)
+      if (!result.success && result.error && !result.error.includes('cancelled')) {
+        console.error('PDF export failed:', result.error)
+      }
+    } finally {
+      setIsExporting(false)
+    }
+  }, [previewState.pptxPath])
+
+  const handleOpenPptx = useCallback(async () => {
+    if (!previewState.pptxPath) return
+    setShowExportMenu(false)
+    const result = await window.api.openPptx(previewState.pptxPath)
+    if (!result.success && result.error) {
+      console.error('Failed to open file:', result.error)
+    }
+  }, [previewState.pptxPath])
+
+  const handleRevealInFinder = useCallback(() => {
+    if (!previewState.pptxPath) return
+    setShowExportMenu(false)
+    window.api.revealInFinder(previewState.pptxPath)
+  }, [previewState.pptxPath])
 
   // ---------------------------------------------------------------------------
   // Render helpers
@@ -438,15 +524,80 @@ export function SlidePreviewPanel({ className = '' }: SlidePreviewPanelProps): R
           </button>
         </div>
 
-        {/* Compile button */}
-        <button
-          onClick={handleCompile}
-          className="flex items-center gap-1.5 rounded bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent-bright transition-fast hover:bg-accent-muted"
-          title="Recompile presentation"
-        >
-          <CompileIcon />
-          Compile
-        </button>
+        {/* Action buttons */}
+        <div className="flex items-center gap-2">
+          {/* Compile button */}
+          <button
+            onClick={handleCompile}
+            className="flex items-center gap-1.5 rounded bg-surface-overlay px-3 py-1.5 text-xs font-medium text-text-secondary transition-fast hover:bg-surface-elevated hover:text-text-primary"
+            title="Recompile presentation"
+          >
+            <CompileIcon />
+            Compile
+          </button>
+
+          {/* Export dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={!previewState.pptxPath || isExporting}
+              className="flex items-center gap-1.5 rounded bg-accent-dim px-3 py-1.5 text-xs font-medium text-accent-bright transition-fast hover:bg-accent-muted disabled:cursor-not-allowed disabled:opacity-50"
+              title="Export presentation"
+            >
+              {isExporting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-bright border-t-transparent" />
+                  Exporting...
+                </>
+              ) : (
+                <>
+                  <ExportIcon />
+                  Export
+                </>
+              )}
+            </button>
+
+            {/* Export dropdown menu */}
+            {showExportMenu && previewState.pptxPath && (
+              <>
+                {/* Backdrop to close menu */}
+                <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)} />
+
+                <div className="absolute right-0 bottom-full z-50 mb-2 w-48 overflow-hidden rounded-lg border border-border bg-surface-overlay shadow-elevated">
+                  <button
+                    onClick={handleExportPptx}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-text-primary transition-fast hover:bg-surface-elevated"
+                  >
+                    <ExportIcon />
+                    Save as .pptx
+                  </button>
+                  <button
+                    onClick={handleExportPdf}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-text-primary transition-fast hover:bg-surface-elevated"
+                  >
+                    <ExportIcon />
+                    Save as .pdf
+                  </button>
+                  <div className="my-1 h-px bg-border" />
+                  <button
+                    onClick={handleOpenPptx}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-text-primary transition-fast hover:bg-surface-elevated"
+                  >
+                    <OpenExternalIcon />
+                    Open in PowerPoint
+                  </button>
+                  <button
+                    onClick={handleRevealInFinder}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-text-primary transition-fast hover:bg-surface-elevated"
+                  >
+                    <FolderIcon />
+                    Show in Folder
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Thumbnail strip (optional - for quick navigation) */}
