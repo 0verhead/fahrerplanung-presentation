@@ -6,37 +6,34 @@
  * - Streaming response display
  * - Tool call status indicators
  * - Input box with send/abort controls
+ *
+ * Uses Zustand for state management via useConversationStore.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AIStreamEvent, ChatMessage } from '../../../../shared/types/ai'
+import { useCallback, useEffect, useRef } from 'react'
+import { useConversationStore } from '../../stores'
 import { ChatInput } from './ChatInput'
 import { ChatMessageList } from './ChatMessageList'
 import { StreamingIndicator } from './StreamingIndicator'
 
-/** Active tool call being displayed */
-interface ActiveToolCall {
-  id: string
-  name: string
-  status: 'running' | 'complete'
-}
-
-/** Step progress information */
-interface StepProgress {
-  current: number
-  max: number
-}
-
 export function ChatPanel(): React.JSX.Element {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [streamingText, setStreamingText] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
-  const [activeToolCalls, setActiveToolCalls] = useState<ActiveToolCall[]>([])
-  const [stepProgress, setStepProgress] = useState<StepProgress | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  // Get state and actions from store
+  const messages = useConversationStore((s) => s.messages)
+  const isLoading = useConversationStore((s) => s.isLoading)
+  const isStreaming = useConversationStore((s) => s.isStreaming)
+  const streamingText = useConversationStore((s) => s.streamingText)
+  const activeToolCalls = useConversationStore((s) => s.activeToolCalls)
+  const stepProgress = useConversationStore((s) => s.stepProgress)
+  const error = useConversationStore((s) => s.error)
+
+  const loadHistory = useConversationStore((s) => s.loadHistory)
+  const handleStreamEvent = useConversationStore((s) => s.handleStreamEvent)
+  const sendMessage = useConversationStore((s) => s.sendMessage)
+  const abort = useConversationStore((s) => s.abort)
+  const clearHistory = useConversationStore((s) => s.clearHistory)
+  const clearError = useConversationStore((s) => s.clearError)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const streamingTextRef = useRef('')
 
   // Scroll to bottom when messages change or streaming updates
   const scrollToBottom = useCallback(() => {
@@ -49,124 +46,54 @@ export function ChatPanel(): React.JSX.Element {
 
   // Load conversation history on mount
   useEffect(() => {
-    window.api.getHistory().then(({ messages: history }) => {
-      setMessages(history)
-    })
-  }, [])
+    loadHistory()
+  }, [loadHistory])
 
   // Subscribe to stream events
   useEffect(() => {
-    const unsubscribe = window.api.onStreamEvent((event: AIStreamEvent) => {
-      switch (event.type) {
-        case 'text-delta':
-          streamingTextRef.current += event.textDelta
-          setStreamingText(streamingTextRef.current)
-          break
-
-        case 'tool-call-start':
-          setActiveToolCalls((prev) => [
-            ...prev,
-            { id: event.toolCallId, name: event.toolName, status: 'running' }
-          ])
-          break
-
-        case 'tool-call-result':
-          setActiveToolCalls((prev) =>
-            prev.map((tc) =>
-              tc.id === event.toolCallId ? { ...tc, status: 'complete' as const } : tc
-            )
-          )
-          // Remove completed tool call after a short delay
-          setTimeout(() => {
-            setActiveToolCalls((prev) => prev.filter((tc) => tc.id !== event.toolCallId))
-          }, 1000)
-          break
-
-        case 'step-start':
-          setStepProgress({ current: event.stepNumber, max: event.maxSteps })
-          break
-
-        case 'step-finish':
-          // Update step progress
-          setStepProgress((prev) =>
-            prev ? { ...prev, current: event.stepNumber } : { current: event.stepNumber, max: 10 }
-          )
-          break
-
-        case 'finish':
-          // Add assistant message to history
-          if (event.text.trim()) {
-            const assistantMessage: ChatMessage = {
-              id: `assistant-${Date.now()}`,
-              role: 'assistant',
-              content: event.text,
-              createdAt: new Date().toISOString()
-            }
-            setMessages((prev) => [...prev, assistantMessage])
-          }
-          // Reset streaming state
-          setIsStreaming(false)
-          setStreamingText('')
-          streamingTextRef.current = ''
-          setActiveToolCalls([])
-          setStepProgress(null)
-          break
-
-        case 'error':
-          setError(event.error)
-          setIsStreaming(false)
-          setStreamingText('')
-          streamingTextRef.current = ''
-          setActiveToolCalls([])
-          setStepProgress(null)
-          break
-      }
-    })
-
+    const unsubscribe = window.api.onStreamEvent(handleStreamEvent)
     return () => {
       unsubscribe()
     }
-  }, [])
+  }, [handleStreamEvent])
 
   // Send message handler
-  const handleSendMessage = useCallback((content: string) => {
-    // Clear any previous error
-    setError(null)
-
-    // Add user message optimistically
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content,
-      createdAt: new Date().toISOString()
-    }
-    setMessages((prev) => [...prev, userMessage])
-
-    // Start streaming state
-    setIsStreaming(true)
-    streamingTextRef.current = ''
-    setStreamingText('')
-
-    // Send to main process
-    window.api.sendMessage(content)
-  }, [])
+  const handleSendMessage = useCallback(
+    (content: string) => {
+      sendMessage(content)
+    },
+    [sendMessage]
+  )
 
   // Abort handler
   const handleAbort = useCallback(() => {
-    window.api.abort()
-    setIsStreaming(false)
-    setStreamingText('')
-    streamingTextRef.current = ''
-    setActiveToolCalls([])
-    setStepProgress(null)
-  }, [])
+    abort()
+  }, [abort])
 
   // Clear history handler
   const handleClearHistory = useCallback(async () => {
-    await window.api.clearHistory()
-    setMessages([])
-    setError(null)
-  }, [])
+    await clearHistory()
+  }, [clearHistory])
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-full flex-col bg-surface-base">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-accent" />
+            <span className="text-body-medium text-text-primary">Chat</span>
+          </div>
+        </div>
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-accent-default border-t-transparent" />
+            <span className="text-caption text-text-tertiary">Loading conversation...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-full flex-col bg-surface-base">
@@ -190,7 +117,7 @@ export function ChatPanel(): React.JSX.Element {
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto px-4 py-4">
         {messages.length === 0 && !isStreaming ? (
-          <EmptyState />
+          <EmptyState onSuggestionClick={handleSendMessage} />
         ) : (
           <>
             <ChatMessageList messages={messages} />
@@ -207,7 +134,7 @@ export function ChatPanel(): React.JSX.Element {
             )}
 
             {/* Error display */}
-            {error && <ErrorDisplay error={error} onDismiss={() => setError(null)} />}
+            {error && <ErrorDisplay error={error} onDismiss={clearError} />}
 
             {/* Scroll anchor */}
             <div ref={messagesEndRef} />
@@ -229,7 +156,17 @@ export function ChatPanel(): React.JSX.Element {
 }
 
 /** Empty state when no messages */
-function EmptyState(): React.JSX.Element {
+function EmptyState({
+  onSuggestionClick
+}: {
+  onSuggestionClick: (suggestion: string) => void
+}): React.JSX.Element {
+  const suggestions = [
+    'Create a startup pitch deck',
+    'Design a quarterly report',
+    'Make a product launch presentation'
+  ]
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-raised shadow-md">
@@ -243,13 +180,10 @@ function EmptyState(): React.JSX.Element {
         </p>
       </div>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {[
-          'Create a startup pitch deck',
-          'Design a quarterly report',
-          'Make a product launch presentation'
-        ].map((suggestion) => (
+        {suggestions.map((suggestion) => (
           <button
             key={suggestion}
+            onClick={() => onSuggestionClick(suggestion)}
             className="rounded-lg border border-border bg-surface-raised px-3 py-1.5 text-caption transition-fast hover:border-border-strong hover:bg-surface-overlay"
           >
             {suggestion}

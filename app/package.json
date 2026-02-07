@@ -31,10 +31,11 @@
     "monaco-editor": "^0.55.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-pptx-extended": "*",
     "react-markdown": "^10.1.0",
+    "react-pptx-extended": "*",
     "tailwindcss": "^4.1.18",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",

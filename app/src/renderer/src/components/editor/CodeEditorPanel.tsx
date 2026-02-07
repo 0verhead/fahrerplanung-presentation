@@ -7,12 +7,14 @@
  * - User-editable with debounced updates to main process
  * - Diff view for reviewing AI changes with accept/reject
  * - Designed per Encore's design system (Refined Dark Studio)
+ *
+ * Uses Zustand for state management via useEditorStore.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import Editor, { DiffEditor, loader, type Monaco } from '@monaco-editor/react'
 import type { editor } from 'monaco-editor'
-import type { TsxChangedEvent } from '../../../../shared/types/ai'
+import { useEditorStore } from '../../stores'
 
 // Configure Monaco to load from node_modules (bundled with Vite)
 loader.config({ paths: { vs: 'node_modules/monaco-editor/min/vs' } })
@@ -23,11 +25,6 @@ loader.config({ paths: { vs: 'node_modules/monaco-editor/min/vs' } })
 
 interface CodeEditorPanelProps {
   className?: string
-}
-
-interface PendingChange {
-  newCode: string
-  previousCode: string
 }
 
 // ---------------------------------------------------------------------------
@@ -125,10 +122,18 @@ function defineEncoreTheme(monaco: Monaco): void {
 // ---------------------------------------------------------------------------
 
 export function CodeEditorPanel({ className = '' }: CodeEditorPanelProps): React.JSX.Element {
-  const [code, setCode] = useState<string>('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [pendingChange, setPendingChange] = useState<PendingChange | null>(null)
-  const [isDirty, setIsDirty] = useState(false)
+  // Get state and actions from store
+  const code = useEditorStore((s) => s.code)
+  const isLoading = useEditorStore((s) => s.isLoading)
+  const isDirty = useEditorStore((s) => s.isDirty)
+  const pendingChange = useEditorStore((s) => s.pendingChange)
+
+  const loadCode = useEditorStore((s) => s.loadCode)
+  const updateCode = useEditorStore((s) => s.updateCode)
+  const saveCode = useEditorStore((s) => s.saveCode)
+  const acceptChange = useEditorStore((s) => s.acceptChange)
+  const rejectChange = useEditorStore((s) => s.rejectChange)
+  const handleTsxChanged = useEditorStore((s) => s.handleTsxChanged)
 
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const diffEditorRef = useRef<editor.IStandaloneDiffEditor | null>(null)
@@ -142,25 +147,10 @@ export function CodeEditorPanel({ className = '' }: CodeEditorPanelProps): React
 
   useEffect(() => {
     // Load initial TSX from main process
-    window.api.getTsx().then(({ code: initialCode }) => {
-      setCode(initialCode)
-      setIsLoading(false)
-    })
+    loadCode()
 
     // Subscribe to TSX changes from AI
-    const unsubscribe = window.api.onTsxChanged((event: TsxChangedEvent) => {
-      if (event.source === 'ai' && event.previousCode !== undefined) {
-        // Show diff view for AI changes
-        setPendingChange({
-          newCode: event.code,
-          previousCode: event.previousCode
-        })
-      } else {
-        // Direct update (initial load or non-diff update)
-        isExternalUpdateRef.current = true
-        setCode(event.code)
-      }
-    })
+    const unsubscribe = window.api.onTsxChanged(handleTsxChanged)
 
     return () => {
       unsubscribe()
@@ -168,32 +158,32 @@ export function CodeEditorPanel({ className = '' }: CodeEditorPanelProps): React
         clearTimeout(updateTimeoutRef.current)
       }
     }
-  }, [])
+  }, [loadCode, handleTsxChanged])
 
   // ---------------------------------------------------------------------------
   // Debounced update to main process
   // ---------------------------------------------------------------------------
 
-  const handleEditorChange = useCallback((value: string | undefined) => {
-    if (value === undefined || isExternalUpdateRef.current) {
-      isExternalUpdateRef.current = false
-      return
-    }
+  const handleEditorChange = useCallback(
+    (value: string | undefined) => {
+      if (value === undefined || isExternalUpdateRef.current) {
+        isExternalUpdateRef.current = false
+        return
+      }
 
-    setCode(value)
-    setIsDirty(true)
+      updateCode(value)
 
-    // Debounce updates to main process (500ms)
-    if (updateTimeoutRef.current) {
-      clearTimeout(updateTimeoutRef.current)
-    }
+      // Debounce updates to main process (500ms)
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current)
+      }
 
-    updateTimeoutRef.current = setTimeout(() => {
-      window.api.setTsx(value).then(() => {
-        setIsDirty(false)
-      })
-    }, 500)
-  }, [])
+      updateTimeoutRef.current = setTimeout(() => {
+        saveCode(value)
+      }, 500)
+    },
+    [updateCode, saveCode]
+  )
 
   // ---------------------------------------------------------------------------
   // Editor mount handlers
@@ -242,17 +232,13 @@ export function CodeEditorPanel({ className = '' }: CodeEditorPanelProps): React
   // ---------------------------------------------------------------------------
 
   const handleAcceptChanges = useCallback(() => {
-    if (pendingChange) {
-      isExternalUpdateRef.current = true
-      setCode(pendingChange.newCode)
-      setPendingChange(null)
-      setIsDirty(false)
-    }
-  }, [pendingChange])
+    isExternalUpdateRef.current = true
+    acceptChange()
+  }, [acceptChange])
 
   const handleRejectChanges = useCallback(() => {
-    setPendingChange(null)
-  }, [])
+    rejectChange()
+  }, [rejectChange])
 
   // ---------------------------------------------------------------------------
   // Render

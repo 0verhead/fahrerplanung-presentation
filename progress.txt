@@ -573,3 +573,58 @@
 - The collapse button on the code panel is always visible; could be enhanced to show only on hover
 - Panel widths are not persisted — the State management (Zustand) task could add persistence
 - The resize handles work well but could benefit from touch support for tablets
+
+---
+
+## Task 12: State management (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Installed `zustand@5.0.11` as specified in the dependency versions
+- Created 4 Zustand stores under `app/src/renderer/src/stores/`:
+  1. **conversation.ts** — Manages chat state: messages, streaming text, active tool calls, step progress, error state, and all actions for the chat workflow
+  2. **editor.ts** — Manages code editor state: current TSX code, dirty flag, pending AI changes for diff view, load/save actions
+  3. **project.ts** — Manages project state: current project metadata, dirty state, recent projects list, create/update/clear actions (prepared for save/load IPC)
+  4. **settings.ts** — Manages settings state: current provider config, API keys per provider, UI preferences, export preferences, load/switch provider actions
+- Created barrel export (`stores/index.ts`) for convenient imports
+- Integrated stores with existing components:
+  - **ChatPanel.tsx** — Refactored to use `useConversationStore` instead of local useState
+  - **CodeEditorPanel.tsx** — Refactored to use `useEditorStore` instead of local useState
+  - **StatusBar.tsx** — Refactored to use `useSettingsStore` instead of local useState
+
+### Key decisions
+- **Zustand with selectors pattern**: Each component selects only the state slices it needs using arrow function selectors (e.g., `useConversationStore((s) => s.messages)`). This ensures components only re-render when their specific state changes.
+- **Store-level actions**: All state mutations are encapsulated in store actions. Components call actions like `sendMessage()`, `loadHistory()`, etc. rather than manipulating state directly.
+- **Separation of concerns**: Each store is focused on a single domain:
+  - Conversation: chat workflow
+  - Editor: code state
+  - Project: project/session management
+  - Settings: configuration and preferences
+- **Prepared for persistence**: The stores are designed to work with IPC for persistence (project save/load, settings storage) which will be implemented in subsequent tasks.
+- **handleStreamEvent in store**: The `handleStreamEvent` action in the conversation store consolidates all stream event handling logic, keeping the component clean.
+
+### Files created
+- `app/src/renderer/src/stores/conversation.ts` — Conversation state and actions (~210 lines)
+- `app/src/renderer/src/stores/editor.ts` — Editor state and actions (~115 lines)
+- `app/src/renderer/src/stores/project.ts` — Project state and actions (~155 lines)
+- `app/src/renderer/src/stores/settings.ts` — Settings state and actions (~190 lines)
+- `app/src/renderer/src/stores/index.ts` — Barrel export with types
+
+### Files modified
+- `app/package.json` — Added zustand@5.0.11
+- `app/src/renderer/src/components/chat/ChatPanel.tsx` — Refactored to use useConversationStore
+- `app/src/renderer/src/components/editor/CodeEditorPanel.tsx` — Refactored to use useEditorStore
+- `app/src/renderer/src/components/layout/StatusBar.tsx` — Refactored to use useSettingsStore
+
+### Verification
+- `npm run typecheck:web` — PASS
+- `npm run lint` — PASS (zero issues after lint:fix)
+- `npm run format:check` — PASS
+- `npm run build` — PASS (main 149.95kB, preload 4.28kB, renderer 935.42kB)
+
+### Notes for next iteration
+- The project store is ready for IPC integration when the "Project/session management" task is implemented
+- The settings store loads from `window.api.getProvider()` but doesn't persist API keys yet — the "Settings & configuration" task will add full persistence
+- Panel width persistence could be added to a UI preferences store in the future
+- The stores use relative imports from `../../stores` — could add path aliases in tsconfig for cleaner imports

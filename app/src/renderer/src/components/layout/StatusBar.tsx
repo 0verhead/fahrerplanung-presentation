@@ -1,39 +1,28 @@
-import { useEffect, useState } from 'react'
+/**
+ * StatusBar — Bottom status bar showing current model, token usage, and generation status.
+ *
+ * Uses Zustand for settings state via useSettingsStore.
+ * Follows the app design system with subtle, unobtrusive styling.
+ */
 
-interface ProviderInfo {
-  type: 'openrouter' | 'anthropic' | 'openai'
-  modelId: string
-}
+import { useEffect } from 'react'
+import { useSettingsStore } from '../../stores'
 
 /**
  * StatusBar — Bottom status bar showing current model, token usage, and generation status.
  * Follows the app design system with subtle, unobtrusive styling.
  */
 export function StatusBar(): React.JSX.Element {
-  const [provider, setProvider] = useState<ProviderInfo | null>(null)
+  const currentProvider = useSettingsStore((s) => s.currentProvider)
+  const isLoading = useSettingsStore((s) => s.isLoading)
+  const loadSettings = useSettingsStore((s) => s.loadSettings)
 
   // Load provider info on mount
   useEffect(() => {
-    const loadProvider = async (): Promise<void> => {
-      try {
-        const result = await window.api.getProvider()
-        if (result.config) {
-          setProvider({
-            type: result.config.type,
-            modelId: result.config.modelId
-          })
-        } else {
-          setProvider(null)
-        }
-      } catch {
-        // Provider not configured yet
-        setProvider(null)
-      }
-    }
-    loadProvider()
-  }, [])
+    loadSettings()
+  }, [loadSettings])
 
-  const getProviderIcon = (type: ProviderInfo['type']): React.JSX.Element => {
+  const getProviderIcon = (type: 'openrouter' | 'anthropic' | 'openai'): React.JSX.Element => {
     switch (type) {
       case 'anthropic':
         return (
@@ -56,7 +45,7 @@ export function StatusBar(): React.JSX.Element {
     }
   }
 
-  const getProviderLabel = (type: ProviderInfo['type']): string => {
+  const getProviderLabel = (type: 'openrouter' | 'anthropic' | 'openai'): string => {
     switch (type) {
       case 'anthropic':
         return 'Anthropic'
@@ -71,14 +60,16 @@ export function StatusBar(): React.JSX.Element {
     <div className="flex h-6 flex-shrink-0 items-center justify-between border-t border-border bg-surface-base px-3">
       {/* Left section: Provider and model info */}
       <div className="flex items-center gap-3 text-[10px] text-text-tertiary">
-        {provider ? (
+        {isLoading ? (
+          <span className="text-text-disabled">Loading...</span>
+        ) : currentProvider ? (
           <>
             <div className="flex items-center gap-1.5">
-              {getProviderIcon(provider.type)}
-              <span>{getProviderLabel(provider.type)}</span>
+              {getProviderIcon(currentProvider.type)}
+              <span>{getProviderLabel(currentProvider.type)}</span>
             </div>
-            <span className="text-text-disabled">•</span>
-            <span className="font-mono text-text-secondary">{provider.modelId}</span>
+            <span className="text-text-disabled">&#8226;</span>
+            <span className="font-mono text-text-secondary">{currentProvider.modelId}</span>
           </>
         ) : (
           <span className="text-text-disabled">No API key configured</span>
@@ -89,11 +80,11 @@ export function StatusBar(): React.JSX.Element {
       <div className="flex items-center gap-3 text-[10px] text-text-disabled">
         <div className="flex items-center gap-1">
           <kbd className="rounded bg-surface-overlay px-1 py-0.5 font-mono text-[9px] text-text-tertiary">
-            ⌘B
+            &#8984;B
           </kbd>
           <span>toggle code</span>
         </div>
-        <span className="text-text-disabled">•</span>
+        <span className="text-text-disabled">&#8226;</span>
         <span>Encore</span>
       </div>
     </div>
