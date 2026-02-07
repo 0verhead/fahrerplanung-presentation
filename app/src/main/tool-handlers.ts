@@ -15,6 +15,8 @@ import { readFile, stat } from 'node:fs/promises'
 import { extname } from 'node:path'
 import { net } from 'electron'
 
+import { compileTsx } from './compiler'
+
 import type {
   WritePresentationCodeInput,
   EditPresentationCodeInput,
@@ -221,9 +223,11 @@ export async function handleEditPresentationCode(
 /**
  * compile_pptx — Trigger TSX -> PPTX compilation.
  *
- * STUB: Returns a placeholder result. The actual compilation engine will be
- * implemented in the "PPTX compilation engine" task. This stub allows the
- * AI agent loop to function and test tool-calling flow.
+ * Compiles the current TSX source to a PPTX file using:
+ * 1. esbuild for TSX transpilation
+ * 2. Sandboxed execution with React + react-pptx-extended
+ * 3. render() to produce the PPTX buffer
+ * 4. Save to file and optionally generate thumbnails
  */
 export async function handleCompilePptx(input: CompilePptxInput): Promise<CompilePptxResult> {
   if (!currentTsxSource) {
@@ -234,17 +238,40 @@ export async function handleCompilePptx(input: CompilePptxInput): Promise<Compil
     }
   }
 
-  // TODO: Implement actual compilation in "PPTX compilation engine" task.
-  // This stub allows the agent loop and tool-calling flow to work end-to-end.
-  void input.outputFilename
+  try {
+    const result = await compileTsx({
+      source: currentTsxSource,
+      outputFilename: input.outputFilename,
+      generateThumbnails: true
+    })
 
-  return {
-    success: false,
-    slideCount: 0,
-    error:
-      'Compilation engine not yet implemented. ' +
-      'The TSX source has been saved and can be compiled once the engine is ready.',
-    warnings: ['compile_pptx is a stub — compilation engine will be implemented in a later task']
+    if (!result.success) {
+      return {
+        success: false,
+        slideCount: 0,
+        error: result.error
+      }
+    }
+
+    // Convert thumbnails to the expected format
+    const slideThumbnails = result.thumbnails?.map((t) => ({
+      slideIndex: t.slideNumber - 1, // Convert 1-based to 0-based
+      dataUri: t.dataUri
+    }))
+
+    return {
+      success: true,
+      slideCount: result.slideCount,
+      outputPath: result.outputPath,
+      slideThumbnails,
+      warnings: result.warnings
+    }
+  } catch (err) {
+    return {
+      success: false,
+      slideCount: 0,
+      error: `Compilation failed: ${err instanceof Error ? err.message : String(err)}`
+    }
   }
 }
 

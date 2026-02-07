@@ -18,7 +18,13 @@ import {
 } from './ai-service'
 import { clearProviderCache } from './ai-provider-registry'
 import { getCurrentTsx, setTsx, onTsxChange } from './tool-handlers'
-import { getSlidePreviewState, onSlidePreviewStateChange } from './slide-preview-state'
+import {
+  getSlidePreviewState,
+  onSlidePreviewStateChange,
+  startCompilation,
+  finishCompilation
+} from './slide-preview-state'
+import { compileTsx } from './compiler'
 import { AI_IPC_CHANNELS } from '../shared/types/ai'
 import type {
   SendMessagePayload,
@@ -112,16 +118,49 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
 
   // --- Trigger manual compilation ---
   ipcMain.handle(AI_IPC_CHANNELS.TRIGGER_COMPILE, async () => {
-    // TODO: Wire up to actual compilation engine in "PPTX compilation engine" task
-    // For now, return a stub response indicating compilation is not yet available
-    const hasTsx = getCurrentTsx().trim().length > 0
-    if (!hasTsx) {
+    const tsxSource = getCurrentTsx().trim()
+    if (!tsxSource) {
       return { success: false, error: 'No presentation code to compile' }
     }
-    return {
-      success: false,
-      error:
-        'Compilation engine not yet implemented. TSX source is saved and ready for compilation.'
+
+    // Notify renderer that compilation is starting
+    startCompilation()
+
+    try {
+      const result = await compileTsx({
+        source: tsxSource,
+        generateThumbnails: true
+      })
+
+      // Convert thumbnails to the format expected by slide-preview-state
+      const slides =
+        result.thumbnails?.map((t) => ({
+          slideIndex: t.slideNumber - 1, // Convert 1-based to 0-based
+          dataUri: t.dataUri,
+          width: t.width,
+          height: t.height
+        })) || []
+
+      // Update slide preview state
+      finishCompilation({
+        success: result.success,
+        slideCount: result.slideCount,
+        slides,
+        error: result.error,
+        warnings: result.warnings,
+        pptxPath: result.outputPath
+      })
+
+      return result
+    } catch (err) {
+      const error = `Compilation failed: ${err instanceof Error ? err.message : String(err)}`
+      finishCompilation({
+        success: false,
+        slideCount: 0,
+        slides: [],
+        error
+      })
+      return { success: false, error }
     }
   })
 
