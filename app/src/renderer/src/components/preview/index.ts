@@ -1,0 +1,1 @@
+export { SlidePreviewPanel } from './SlidePreviewPanel'
