@@ -15,6 +15,7 @@ import type { LanguageModelUsage } from 'ai'
 import type { ModelMessage } from '@ai-sdk/provider-utils'
 
 import { createLanguageModel } from './ai-provider-registry'
+import { createEncoreTools } from './ai-tools'
 import type { AIProviderConfig, AIStreamEvent, AIUsageInfo, ChatMessage } from '../shared/types/ai'
 import { DEFAULT_MODELS } from '../shared/types/ai'
 import { getSystemPrompt } from '../shared/prompts/system'
@@ -148,9 +149,16 @@ export async function streamChat(
       // In AI SDK v6, `stopWhen` with `stepCountIs(n)` replaces the old `maxSteps`
       stopWhen: stepCountIs(MAX_AGENT_STEPS),
 
-      // Tools will be added in the "AI tool definitions" task.
-      // For now, the pipeline works in pure text-generation mode.
-      // tools: {},
+      // AI tools for presentation generation, file I/O, and web access.
+      // Tool lifecycle events are forwarded to the renderer for UI indicators.
+      tools: createEncoreTools((toolEvent) => {
+        onEvent({
+          type: toolEvent.type,
+          toolCallId: toolEvent.toolCallId,
+          toolName: toolEvent.toolName,
+          ...(toolEvent.result !== undefined ? { result: toolEvent.result } : {})
+        } as AIStreamEvent)
+      }),
 
       // Called when each step finishes (useful for tracking multi-step progress)
       onStepFinish(stepResult) {

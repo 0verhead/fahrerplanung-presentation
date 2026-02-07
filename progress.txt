@@ -203,3 +203,51 @@
 - The system prompt is ~5-6K tokens which is reasonable for a comprehensive reference; could be trimmed if token budgets become an issue
 - The `setCurrentTsx()` function should be called by the compilation engine when TSX is updated (either by AI tool or user editor)
 - Font recommendations in the prompt are limited to fonts commonly available in PowerPoint; the compilation engine doesn't bundle fonts, so the output depends on the viewer's installed fonts
+
+---
+
+## Task 5: AI tool definitions (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Verified and completed the AI tool implementation with 6 Zod-typed tools:
+  1. **write_presentation_code** — Stores TSX source, updates AI context
+  2. **edit_presentation_code** — Applies search-and-replace edits with uniqueness validation
+  3. **compile_pptx** — Stub returning placeholder (compilation engine is a separate task)
+  4. **read_local_file** — Full implementation with MIME type detection, encoding detection, size limits (10MB max), text truncation (100K chars)
+  5. **web_search** — Stub (requires external search API key via Settings)
+  6. **fetch_image** — Full implementation using Electron's `net.fetch` with size limits (20MB max)
+- Tools are wired into `streamText()` pipeline in `ai-service.ts`
+- Tool events (start/result) are forwarded to renderer via IPC for UI status indicators
+- Added explicit return type to `createEncoreTools()` to satisfy ESLint
+
+### Key decisions
+- **Tool event forwarding**: Each tool wrapper emits `tool-call-start` and `tool-call-result` events via the `onToolEvent` callback. These are forwarded to the renderer via IPC stream events for UI indicators like "Compiling slides...".
+- **Stubs for compile_pptx and web_search**: These require external infrastructure (compilation engine, search API). Stubs return helpful error messages so the AI knows the feature is pending. This allows the agent loop to work end-to-end.
+- **Electron net.fetch for images**: Uses Electron's net module instead of Node's fetch for proper CORS handling and proxy support in the Electron environment.
+- **Safety limits**: 10MB max for local files, 20MB max for fetched images, 100K char truncation for text files to prevent context overflow.
+- **Search-and-replace validation**: `edit_presentation_code` verifies each search string exists exactly once before applying, with per-edit error reporting.
+- **Dual state tracking**: `currentTsxSource` is tracked in both `tool-handlers.ts` (for edit operations) and `ai-service.ts` (for system prompt injection). `setCurrentTsx()` syncs them.
+
+### Files created
+- `app/src/shared/tools/schemas.ts` — Zod input schemas for all 6 tools with rich `.describe()` annotations
+- `app/src/shared/tools/types.ts` — TypeScript result types for all tools
+- `app/src/shared/tools/index.ts` — Barrel export for schemas and types
+- `app/src/main/ai-tools.ts` — Tool factory using AI SDK v6 `tool()` helper
+- `app/src/main/tool-handlers.ts` — Main process execution handlers
+
+### Files modified
+- `app/src/main/ai-service.ts` — Imports and wires `createEncoreTools()` into `streamText({ tools })`
+
+### Verification
+- `npm run typecheck` — PASS (both node and web configs)
+- `npm run lint` — PASS (zero issues)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (main 43.63kB with tools, preload 2.38kB, renderer 536.9kB)
+
+### Notes for next iteration
+- `compile_pptx` is a stub — the "PPTX compilation engine" task will implement the actual TSX -> PPTX pipeline
+- `web_search` is a stub — the "Settings & configuration" task should add search API key management (Brave Search, Tavily, etc.)
+- The tool event IPC flow is: `createEncoreTools(onToolEvent)` → `onEvent(toolEvent)` in `streamChat()` → `webContents.send(STREAM_EVENT)` → renderer listener
+- The agent loop is now functional for code write/edit/read operations — only compilation preview is pending
