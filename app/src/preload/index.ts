@@ -7,9 +7,12 @@ import type {
   ChatMessage,
   SendMessagePayload,
   SetProviderPayload,
+  SetBrandKitPayload,
+  SetThemeVariantPayload,
   TsxChangedEvent,
   SlidePreviewState,
-  SlidesUpdatedEvent
+  SlidesUpdatedEvent,
+  GetBrandKitsResponse
 } from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
@@ -130,6 +133,47 @@ const aiApi = {
    */
   async triggerCompile(): Promise<{ success: boolean; error?: string }> {
     return ipcRenderer.invoke(AI_IPC_CHANNELS.TRIGGER_COMPILE)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Brand Kit API
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get all available brand kits.
+   */
+  async getBrandKits(): Promise<GetBrandKitsResponse> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_BRAND_KITS)
+  },
+
+  /**
+   * Get the current brand kit ID.
+   */
+  async getBrandKit(): Promise<{ brandKitId: string }> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_BRAND_KIT)
+  },
+
+  /**
+   * Set the active brand kit.
+   */
+  async setBrandKit(brandKitId: string): Promise<{ success: boolean }> {
+    const payload: SetBrandKitPayload = { brandKitId }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_BRAND_KIT, payload)
+  },
+
+  /**
+   * Get the current theme variant.
+   */
+  async getThemeVariant(): Promise<{ variant: 'dark' | 'light' }> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_THEME_VARIANT)
+  },
+
+  /**
+   * Set the theme variant.
+   */
+  async setThemeVariant(variant: 'dark' | 'light'): Promise<{ success: boolean }> {
+    const payload: SetThemeVariantPayload = { variant }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_THEME_VARIANT, payload)
   }
 }
 

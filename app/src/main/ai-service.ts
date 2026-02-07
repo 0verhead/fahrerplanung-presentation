@@ -32,6 +32,7 @@ import { createEncoreTools, type EncoreToolSet } from './ai-tools'
 import type { AIProviderConfig, AIStreamEvent, AIUsageInfo, ChatMessage } from '../shared/types/ai'
 import { DEFAULT_MODELS } from '../shared/types/ai'
 import { getSystemPrompt } from '../shared/prompts/system'
+import { getDefaultBrandKit, getBrandKit, generateBrandPromptSection } from '../shared/brand'
 
 // ---------------------------------------------------------------------------
 // Session state
@@ -61,6 +62,12 @@ let currentTsxSource: string | undefined
 
 /** Current step number for tracking multi-step progress */
 let currentStepNumber = 0
+
+/** Current brand kit ID — defaults to 'neutral' */
+let currentBrandKitId: string = 'neutral'
+
+/** Current theme variant — 'dark' or 'light' */
+let currentThemeVariant: 'dark' | 'light' = 'dark'
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -105,6 +112,34 @@ export function clearHistory(): void {
  */
 export function setCurrentTsx(tsx: string | undefined): void {
   currentTsxSource = tsx
+}
+
+/**
+ * Set the active brand kit by ID.
+ */
+export function setBrandKit(brandKitId: string): void {
+  currentBrandKitId = brandKitId
+}
+
+/**
+ * Get the current brand kit ID.
+ */
+export function getCurrentBrandKitId(): string {
+  return currentBrandKitId
+}
+
+/**
+ * Set the active theme variant.
+ */
+export function setThemeVariant(variant: 'dark' | 'light'): void {
+  currentThemeVariant = variant
+}
+
+/**
+ * Get the current theme variant.
+ */
+export function getCurrentThemeVariant(): 'dark' | 'light' {
+  return currentThemeVariant
 }
 
 /**
@@ -178,10 +213,18 @@ export async function streamChat(
     currentStepNumber = 1
     onEvent({ type: 'step-start', stepNumber: 1, maxSteps: MAX_AGENT_STEPS })
 
+    // Build system prompt with brand kit context
+    const brandKit = getBrandKit(currentBrandKitId) ?? getDefaultBrandKit()
+    const brandSection = generateBrandPromptSection(brandKit, currentThemeVariant)
+    const systemPrompt = getSystemPrompt({
+      currentTsx: currentTsxSource,
+      brandSection
+    })
+
     // Execute the streaming pipeline
     const result = streamText({
       model,
-      system: getSystemPrompt(currentTsxSource),
+      system: systemPrompt,
       messages: conversationHistory,
       abortSignal: abortController.signal,
 

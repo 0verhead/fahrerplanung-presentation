@@ -628,3 +628,58 @@
 - The settings store loads from `window.api.getProvider()` but doesn't persist API keys yet — the "Settings & configuration" task will add full persistence
 - Panel width persistence could be added to a UI preferences store in the future
 - The stores use relative imports from `../../stores` — could add path aliases in tsconfig for cleaner imports
+
+---
+
+## Task 13: Theme & brand system (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Verified comprehensive brand kit system already exists in `app/src/shared/brand/`:
+  - Full TypeScript types (`types.ts`) for brand kits: ColorScale, BrandColors, BrandFonts, TypographyPreset, ShadowPreset, ThemeVariant, BrandKit, BrandKitContext
+  - Registry (`registry.ts`) for managing built-in and custom brand kits
+  - Four built-in presets following frontend-design skill principles:
+    - **Neutral** — Default neutral palette with amber accents, Helvetica Neue + Georgia
+    - **Executive** — Sophisticated dark theme with gold accents, Didot + Optima
+    - **Editorial** — Magazine-inspired design with rose accents, Bodoni MT + Baskerville
+    - **Dashboard** — Data-forward design with emerald accents, Futura + Avenir
+- Verified AI service integration: `ai-service.ts` injects brand kit context into system prompt via `generateBrandPromptSection()`
+- Verified IPC handlers exist for brand kit management: `GET_BRAND_KITS`, `GET_BRAND_KIT`, `SET_BRAND_KIT`, `GET_THEME_VARIANT`, `SET_THEME_VARIANT`
+- Verified preload API exposes brand kit methods to renderer
+- Added brand kit state to settings store:
+  - New `BrandPreferences` interface with `activeBrandKitId` and `activeThemeVariant`
+  - `availableBrandKits` array for listing available kits
+  - Actions: `setBrandKit()`, `setThemeVariant()`, `loadBrandKits()`
+  - Updated `loadSettings()` to load brand kits on startup
+
+### Key decisions
+- **Four distinctive built-in presets**: Each preset uses distinctive fonts (not generic system fonts) and has a clear visual identity following the frontend-design skill
+- **Default is 'neutral'**: Uses Helvetica Neue + Georgia with amber accent — professional and works for any presentation
+- **Theme variant support**: Each brand kit has both dark and light themes, selectable independently
+- **Brand kit context in system prompt**: The AI always knows the active brand kit via `generateBrandPromptSection()` injected into the prompt
+- **Settings store integration**: Brand preferences are loaded on app startup and can be changed via the store actions
+
+### Files already existing (verified)
+- `app/src/shared/brand/types.ts` — BrandKit type system (~270 lines)
+- `app/src/shared/brand/registry.ts` — Brand kit registry and utilities (~265 lines)
+- `app/src/shared/brand/presets/neutral.ts` — Default neutral brand kit
+- `app/src/shared/brand/presets/executive.ts` — Executive dark theme
+- `app/src/shared/brand/presets/editorial.ts` — Editorial magazine style
+- `app/src/shared/brand/presets/dashboard.ts` — Data dashboard style
+- `app/src/shared/brand/index.ts` — Barrel exports
+
+### Files modified
+- `app/src/renderer/src/stores/settings.ts` — Added `BrandPreferences`, `availableBrandKits`, brand kit actions, and updated `loadSettings()`
+- `app/src/shared/prompts/system.ts` — Fixed prettier warning (already had brand context injection)
+
+### Verification
+- `npm run lint` — PASS (zero issues after lint:fix)
+- `npm run format:check` — PASS
+- `npm run build` — PASS (main, preload, renderer 937.65kB)
+
+### Notes for next iteration
+- The "Settings & configuration" task should add UI for selecting brand kits and theme variants
+- Custom brand kits can be registered via `registerBrandKit()` — could be exposed through a brand editor UI
+- The old `src/theme/` directory contains AVEMO-specific colors — consider removing or migrating to a custom brand kit
+- The AI can now incorporate brand kits automatically — when users provide brand info via chat, the AI should update the active brand kit

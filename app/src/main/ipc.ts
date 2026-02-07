@@ -14,7 +14,11 @@ import {
   getProviderConfig,
   clearHistory,
   getHistory,
-  abortGeneration
+  abortGeneration,
+  setBrandKit,
+  getCurrentBrandKitId,
+  setThemeVariant,
+  getCurrentThemeVariant
 } from './ai-service'
 import { clearProviderCache } from './ai-provider-registry'
 import { getCurrentTsx, setTsx, onTsxChange } from './tool-handlers'
@@ -29,9 +33,12 @@ import { AI_IPC_CHANNELS } from '../shared/types/ai'
 import type {
   SendMessagePayload,
   SetProviderPayload,
+  SetBrandKitPayload,
+  SetThemeVariantPayload,
   TsxChangedEvent,
   SlidesUpdatedEvent
 } from '../shared/types/ai'
+import { getAllBrandKitMeta } from '../shared/brand'
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -172,6 +179,40 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
       win.webContents.send(AI_IPC_CHANNELS.SLIDES_UPDATED, event)
     }
   })
+
+  // --- Get available brand kits ---
+  ipcMain.handle(AI_IPC_CHANNELS.GET_BRAND_KITS, async () => {
+    return {
+      kits: getAllBrandKitMeta(),
+      activeId: getCurrentBrandKitId(),
+      activeTheme: getCurrentThemeVariant()
+    }
+  })
+
+  // --- Get current brand kit ID ---
+  ipcMain.handle(AI_IPC_CHANNELS.GET_BRAND_KIT, async () => {
+    return { brandKitId: getCurrentBrandKitId() }
+  })
+
+  // --- Set active brand kit ---
+  ipcMain.handle(AI_IPC_CHANNELS.SET_BRAND_KIT, async (_event, payload: SetBrandKitPayload) => {
+    setBrandKit(payload.brandKitId)
+    return { success: true }
+  })
+
+  // --- Get current theme variant ---
+  ipcMain.handle(AI_IPC_CHANNELS.GET_THEME_VARIANT, async () => {
+    return { variant: getCurrentThemeVariant() }
+  })
+
+  // --- Set theme variant ---
+  ipcMain.handle(
+    AI_IPC_CHANNELS.SET_THEME_VARIANT,
+    async (_event, payload: SetThemeVariantPayload) => {
+      setThemeVariant(payload.variant)
+      return { success: true }
+    }
+  )
 }
 
 /**
@@ -188,4 +229,9 @@ export function removeAIIpcHandlers(): void {
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_TSX)
   ipcMain.removeHandler(AI_IPC_CHANNELS.GET_SLIDES)
   ipcMain.removeHandler(AI_IPC_CHANNELS.TRIGGER_COMPILE)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.GET_BRAND_KITS)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.GET_BRAND_KIT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SET_BRAND_KIT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.GET_THEME_VARIANT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SET_THEME_VARIANT)
 }

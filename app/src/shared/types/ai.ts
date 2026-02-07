@@ -104,7 +104,17 @@ export const AI_IPC_CHANNELS = {
   /** Renderer -> Main: get current slide preview data */
   GET_SLIDES: 'ai:get-slides',
   /** Renderer -> Main: trigger manual compilation */
-  TRIGGER_COMPILE: 'ai:trigger-compile'
+  TRIGGER_COMPILE: 'ai:trigger-compile',
+  /** Renderer -> Main: get available brand kits */
+  GET_BRAND_KITS: 'ai:get-brand-kits',
+  /** Renderer -> Main: get current brand kit */
+  GET_BRAND_KIT: 'ai:get-brand-kit',
+  /** Renderer -> Main: set active brand kit */
+  SET_BRAND_KIT: 'ai:set-brand-kit',
+  /** Renderer -> Main: set theme variant */
+  SET_THEME_VARIANT: 'ai:set-theme-variant',
+  /** Renderer -> Main: get theme variant */
+  GET_THEME_VARIANT: 'ai:get-theme-variant'
 } as const
 
 // ---------------------------------------------------------------------------
@@ -180,4 +190,32 @@ export interface SetProviderPayload {
 /** Response for ai:get-provider */
 export interface GetProviderResponse {
   config: AIProviderConfig | null
+}
+
+// ---------------------------------------------------------------------------
+// Brand kit types (for IPC)
+// ---------------------------------------------------------------------------
+
+/** Metadata about a brand kit (for listing) */
+export interface BrandKitMeta {
+  id: string
+  name: string
+  description?: string
+}
+
+/** Response for ai:get-brand-kits */
+export interface GetBrandKitsResponse {
+  kits: BrandKitMeta[]
+  activeId: string
+  activeTheme: 'dark' | 'light'
+}
+
+/** Payload for ai:set-brand-kit */
+export interface SetBrandKitPayload {
+  brandKitId: string
+}
+
+/** Payload for ai:set-theme-variant */
+export interface SetThemeVariantPayload {
+  variant: 'dark' | 'light'
 }

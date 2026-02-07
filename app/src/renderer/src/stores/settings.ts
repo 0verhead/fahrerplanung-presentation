@@ -6,12 +6,13 @@
  * - Current model selection
  * - UI preferences (theme, layout, etc.)
  * - Export preferences
+ * - Brand kit selection
  *
  * Syncs with main process via IPC for persistence.
  */
 
 import { create } from 'zustand'
-import type { AIProviderConfig, AIProviderType } from '../../../shared/types/ai'
+import type { AIProviderConfig, AIProviderType, BrandKitMeta } from '../../../shared/types/ai'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -48,6 +49,14 @@ export interface ExportPreferences {
   defaultFormat: 'pptx' | 'pdf'
 }
 
+/** Brand kit preferences */
+export interface BrandPreferences {
+  /** Active brand kit ID */
+  activeBrandKitId: string
+  /** Active theme variant */
+  activeThemeVariant: 'dark' | 'light'
+}
+
 interface SettingsState {
   // Provider config
   currentProvider: AIProviderConfig | null
@@ -56,6 +65,10 @@ interface SettingsState {
   // Preferences
   uiPreferences: UIPreferences
   exportPreferences: ExportPreferences
+  brandPreferences: BrandPreferences
+
+  // Available brand kits
+  availableBrandKits: BrandKitMeta[]
 
   // Loading state
   isLoading: boolean
@@ -88,6 +101,11 @@ interface SettingsState {
 
   // Get all configured providers
   getConfiguredProviders: () => AIProviderType[]
+
+  // Brand kit actions
+  setBrandKit: (brandKitId: string) => Promise<boolean>
+  setThemeVariant: (variant: 'dark' | 'light') => Promise<boolean>
+  loadBrandKits: () => Promise<void>
 }
 
 // ---------------------------------------------------------------------------
@@ -107,6 +125,11 @@ const DEFAULT_EXPORT_PREFERENCES: ExportPreferences = {
   defaultFormat: 'pptx'
 }
 
+const DEFAULT_BRAND_PREFERENCES: BrandPreferences = {
+  activeBrandKitId: 'neutral',
+  activeThemeVariant: 'dark'
+}
+
 // ---------------------------------------------------------------------------
 // Store
 // ---------------------------------------------------------------------------
@@ -117,6 +140,8 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   apiKeys: {},
   uiPreferences: DEFAULT_UI_PREFERENCES,
   exportPreferences: DEFAULT_EXPORT_PREFERENCES,
+  brandPreferences: DEFAULT_BRAND_PREFERENCES,
+  availableBrandKits: [],
   isLoading: true,
   isSaving: false,
   error: null,
@@ -165,6 +190,20 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
           currentProvider: config,
           apiKeys: { [config.type]: config.apiKey }
         })
+      }
+
+      // Load brand kits
+      try {
+        const brandResponse = await window.api.getBrandKits()
+        set({
+          availableBrandKits: brandResponse.kits,
+          brandPreferences: {
+            activeBrandKitId: brandResponse.activeId,
+            activeThemeVariant: brandResponse.activeTheme
+          }
+        })
+      } catch (brandError) {
+        console.error('Failed to load brand kits:', brandError)
       }
 
       set({ isLoading: false })
@@ -221,5 +260,59 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     return (Object.keys(apiKeys) as AIProviderType[]).filter(
       (p) => apiKeys[p] && apiKeys[p]!.length > 0
     )
+  },
+
+  // ---------------------------------------------------------------------------
+  // Brand Kit Actions
+  // ---------------------------------------------------------------------------
+
+  // Set active brand kit
+  setBrandKit: async (brandKitId) => {
+    try {
+      set({ isSaving: true, error: null })
+      await window.api.setBrandKit(brandKitId)
+      set((state) => ({
+        brandPreferences: { ...state.brandPreferences, activeBrandKitId: brandKitId },
+        isSaving: false
+      }))
+      return true
+    } catch (error) {
+      console.error('Failed to set brand kit:', error)
+      set({ isSaving: false, error: 'Failed to set brand kit' })
+      return false
+    }
+  },
+
+  // Set theme variant (dark/light)
+  setThemeVariant: async (variant) => {
+    try {
+      set({ isSaving: true, error: null })
+      await window.api.setThemeVariant(variant)
+      set((state) => ({
+        brandPreferences: { ...state.brandPreferences, activeThemeVariant: variant },
+        isSaving: false
+      }))
+      return true
+    } catch (error) {
+      console.error('Failed to set theme variant:', error)
+      set({ isSaving: false, error: 'Failed to set theme variant' })
+      return false
+    }
+  },
+
+  // Load available brand kits from main process
+  loadBrandKits: async () => {
+    try {
+      const response = await window.api.getBrandKits()
+      set({
+        availableBrandKits: response.kits,
+        brandPreferences: {
+          activeBrandKitId: response.activeId,
+          activeThemeVariant: response.activeTheme
+        }
+      })
+    } catch (error) {
+      console.error('Failed to load brand kits:', error)
+    }
   }
 }))

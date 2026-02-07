@@ -5,11 +5,13 @@ import type {
   ChatMessage,
   TsxChangedEvent,
   SlidePreviewState,
-  SlidesUpdatedEvent
+  SlidesUpdatedEvent,
+  GetBrandKitsResponse
 } from '../shared/types/ai'
 
 /** AI API exposed from the preload script */
 interface EncoreAIApi {
+  // Chat & AI
   sendMessage(message: string, providerConfig?: AIProviderConfig): void
   onStreamEvent(callback: (event: AIStreamEvent) => void): () => void
   abort(): void
@@ -17,12 +19,23 @@ interface EncoreAIApi {
   getProvider(): Promise<{ config: AIProviderConfig | null }>
   clearHistory(): Promise<{ success: boolean }>
   getHistory(): Promise<{ messages: ChatMessage[] }>
+
+  // Code editor
   getTsx(): Promise<{ code: string }>
   setTsx(code: string): Promise<{ success: boolean }>
   onTsxChanged(callback: (event: TsxChangedEvent) => void): () => void
+
+  // Slide preview
   getSlides(): Promise<SlidePreviewState>
   onSlidesUpdated(callback: (event: SlidesUpdatedEvent) => void): () => void
   triggerCompile(): Promise<{ success: boolean; error?: string }>
+
+  // Brand kit
+  getBrandKits(): Promise<GetBrandKitsResponse>
+  getBrandKit(): Promise<{ brandKitId: string }>
+  setBrandKit(brandKitId: string): Promise<{ success: boolean }>
+  getThemeVariant(): Promise<{ variant: 'dark' | 'light' }>
+  setThemeVariant(variant: 'dark' | 'light'): Promise<{ success: boolean }>
 }
 
 declare global {
