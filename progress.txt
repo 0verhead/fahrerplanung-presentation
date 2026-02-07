@@ -287,3 +287,58 @@
 - The Chat Panel task should consume the new `step-start` and enhanced `step-finish` events to show progress indicators (e.g., "Step 2/10: Compiling...")
 - The error `isRetryable` flag can be used by the UI to show a "Retry" button for transient failures
 - Tool results are now part of conversation history, so the AI can reference previous tool outputs in later steps
+
+---
+
+## Task 7: Chat panel (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Installed `react-markdown@10.1.0` for markdown rendering in chat messages
+- Created a complete chat panel component system under `app/src/renderer/src/components/chat/`:
+  - `ChatPanel.tsx` — Main chat container with message list, streaming indicator, input area
+  - `ChatMessageList.tsx` — Renders list of chat messages
+  - `ChatMessageItem.tsx` — Individual message with markdown rendering and avatar
+  - `ChatInput.tsx` — Auto-resizing textarea with send/abort buttons
+  - `StreamingIndicator.tsx` — Shows streaming text, tool call status pills, step progress bar
+  - `index.ts` — Barrel export for all chat components
+- Integrated with the IPC streaming architecture via `window.api` methods
+- Updated App.tsx to include the ChatPanel in a temporary single-panel layout
+
+### Key decisions
+- **Custom IPC-based chat instead of useChat()**: Since the AI pipeline runs in the main process and uses custom IPC, we built a custom chat hook that:
+  - Calls `window.api.sendMessage()` to send messages
+  - Subscribes to `window.api.onStreamEvent()` for streaming responses
+  - Handles abort via `window.api.abort()`
+  - Loads history on mount via `window.api.getHistory()`
+- **Markdown rendering**: Used `react-markdown` with custom component overrides matching the design system (text colors, code blocks, blockquotes, links)
+- **Streaming state management**: Uses React state + refs to accumulate streaming text, track active tool calls, and show step progress
+- **Tool call status indicators**: Shows animated pills for running tools ("Writing code...", "Compiling slides...") with checkmark when complete
+- **Step progress bar**: Displays current step / max steps during multi-step agent loops
+- **Empty state**: Shows helpful suggestions when no messages ("Create a startup pitch deck", etc.)
+- **Error handling**: Displays error messages with dismiss button, styled with error colors
+
+### Files created
+- `app/src/renderer/src/components/chat/ChatPanel.tsx` — Main chat panel component (~260 lines)
+- `app/src/renderer/src/components/chat/ChatMessageList.tsx` — Message list wrapper
+- `app/src/renderer/src/components/chat/ChatMessageItem.tsx` — Message with markdown + avatar
+- `app/src/renderer/src/components/chat/ChatInput.tsx` — Input textarea with send/abort
+- `app/src/renderer/src/components/chat/StreamingIndicator.tsx` — Streaming response + tool status
+- `app/src/renderer/src/components/chat/index.ts` — Barrel export
+
+### Files modified
+- `app/package.json` — Added react-markdown@10.1.0
+- `app/src/renderer/src/App.tsx` — Replaced placeholder with ChatPanel + temporary layout
+
+### Verification
+- `npm run typecheck:web` — PASS
+- `npm run lint` — PASS (zero issues)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (renderer 852.48kB with react-markdown)
+
+### Notes for next iteration
+- The Chat panel is fully functional but needs the Code Editor and Slide Preview panels to complete the three-panel layout
+- The "Panel layout & micro-interactions" task will add resizable split panes and the Cursor-like code panel toggle
+- Tool call indicators are ready to display actual tool activity once the compilation engine is implemented
+- The empty state suggestions are clickable but don't auto-send yet (could be enhanced later)

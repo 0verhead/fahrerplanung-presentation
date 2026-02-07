@@ -4,7 +4,7 @@ title: standalone-ai-pptx-gen
 status: in-progress
 priority: high
 created: 2026-02-07T00:00:00.000Z
-updated: 2026-02-07T08:00:00.000Z
+updated: 2026-02-07T09:00:00.000Z
 ---
 
 ## Summary
@@ -146,7 +146,7 @@ Encore is a standalone Electron desktop app that provides a Cursor-like AI-power
 - [x] **AI system prompt** — Craft the prompt embedding: react-pptx-extended API reference (all components, props, types), the full `frontend-design` SKILL.md principles, theme token conventions, design best practices from AGENTS.md, tool-use instructions, and presentation structure guidelines.
 - [x] **AI tool definitions** — Implement Zod-typed tools: `write_presentation_code`, `edit_presentation_code`, `compile_pptx`, `read_local_file`, `web_search`, `fetch_image`. Each with proper input schemas, execution handlers, and structured result types.
 - [x] **Multi-step agent loop** — Configure `maxSteps` for autonomous chaining. AI should be able to: analyze user request -> plan design direction -> write TSX -> compile -> check slide previews -> self-correct issues -> present final result. Handle tool errors gracefully with retry logic.
-- [ ] **Chat panel** — Build conversation UI with `useChat()` and `react-markdown@10.1.0`: message list, markdown rendering, code blocks, streaming response display, tool-call status indicators ("Compiling slides...", "Reading file..."), input box. Style per app design system with Tailwind 4.
+- [x] **Chat panel** — Build conversation UI with `useChat()` and `react-markdown@10.1.0`: message list, markdown rendering, code blocks, streaming response display, tool-call status indicators ("Compiling slides...", "Reading file..."), input box. Style per app design system with Tailwind 4.
 - [ ] **Code editor panel** — Integrate `@monaco-editor/react@4.7.0` with `monaco-editor@0.55.1`. TSX syntax highlighting, sync with AI-written code, user-editable. Diff view for AI changes. Cursor-like accept/reject for AI edits.
 - [ ] **Slide preview panel** — Render compiled slide PNGs. Auto-update on recompilation. Zoom, slide navigation, error display. Styled with app design system.
 - [ ] **Panel layout & micro-interactions** — Resizable three-panel layout with Cursor-like code panel toggle. Motion via CSS transitions/animations. Follow frontend-design skill for spatial composition.
