@@ -183,24 +183,21 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       set({ isLoading: true })
 
-      // Load current provider
-      const { config } = await window.api.getProvider()
-      if (config) {
-        set({
-          currentProvider: config,
-          apiKeys: { [config.type]: config.apiKey }
-        })
-      }
+      // Load all settings from persistent store
+      const settings = await window.api.getSettings()
+      set({
+        currentProvider: settings.currentProvider,
+        apiKeys: settings.apiKeys,
+        uiPreferences: settings.uiPreferences,
+        exportPreferences: settings.exportPreferences,
+        brandPreferences: settings.brandPreferences
+      })
 
-      // Load brand kits
+      // Load brand kits list
       try {
         const brandResponse = await window.api.getBrandKits()
         set({
-          availableBrandKits: brandResponse.kits,
-          brandPreferences: {
-            activeBrandKitId: brandResponse.activeId,
-            activeThemeVariant: brandResponse.activeTheme
-          }
+          availableBrandKits: brandResponse.kits
         })
       } catch (brandError) {
         console.error('Failed to load brand kits:', brandError)

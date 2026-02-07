@@ -1,6 +1,7 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type {
   AIProviderConfig,
+  AIProviderType,
   AIStreamEvent,
   ChatMessage,
   TsxChangedEvent,
@@ -8,7 +9,10 @@ import type {
   SlidesUpdatedEvent,
   GetBrandKitsResponse,
   ExportPptxResponse,
-  ExportPdfResponse
+  ExportPdfResponse,
+  GetAllSettingsResponse,
+  UIPreferences,
+  ExportPreferences
 } from '../shared/types/ai'
 
 /** AI API exposed from the preload script */
@@ -53,6 +57,20 @@ interface EncoreAIApi {
   openPptx(filePath: string): Promise<{ success: boolean; error?: string }>
   revealInFinder(filePath: string): void
   isPdfExportAvailable(): Promise<{ available: boolean }>
+
+  // Settings
+  getSettings(): Promise<GetAllSettingsResponse>
+  setApiKey(provider: AIProviderType, apiKey: string): Promise<{ success: boolean }>
+  removeApiKey(provider: AIProviderType): Promise<{ success: boolean }>
+  setPreferredModel(provider: AIProviderType, modelId: string): Promise<{ success: boolean }>
+  setUIPreference<K extends keyof UIPreferences>(
+    key: K,
+    value: UIPreferences[K]
+  ): Promise<{ success: boolean }>
+  setExportPreference<K extends keyof ExportPreferences>(
+    key: K,
+    value: ExportPreferences[K]
+  ): Promise<{ success: boolean }>
 }
 
 declare global {

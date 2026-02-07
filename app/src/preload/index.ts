@@ -3,6 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import { AI_IPC_CHANNELS } from '../shared/types/ai'
 import type {
   AIProviderConfig,
+  AIProviderType,
   AIStreamEvent,
   ChatMessage,
   SendMessagePayload,
@@ -18,7 +19,15 @@ import type {
   ExportPdfPayload,
   ExportPdfResponse,
   OpenPptxPayload,
-  RevealInFinderPayload
+  RevealInFinderPayload,
+  GetAllSettingsResponse,
+  SetApiKeyPayload,
+  RemoveApiKeyPayload,
+  SetPreferredModelPayload,
+  SetUIPreferencePayload,
+  SetExportPreferencePayload,
+  UIPreferences,
+  ExportPreferences
 } from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
@@ -233,6 +242,66 @@ const aiApi = {
    */
   async isPdfExportAvailable(): Promise<{ available: boolean }> {
     return ipcRenderer.invoke(AI_IPC_CHANNELS.IS_PDF_EXPORT_AVAILABLE)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Settings API
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get all settings.
+   */
+  async getSettings(): Promise<GetAllSettingsResponse> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_SETTINGS)
+  },
+
+  /**
+   * Set API key for a provider.
+   */
+  async setApiKey(provider: AIProviderType, apiKey: string): Promise<{ success: boolean }> {
+    const payload: SetApiKeyPayload = { provider, apiKey }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_API_KEY, payload)
+  },
+
+  /**
+   * Remove API key for a provider.
+   */
+  async removeApiKey(provider: AIProviderType): Promise<{ success: boolean }> {
+    const payload: RemoveApiKeyPayload = { provider }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.REMOVE_API_KEY, payload)
+  },
+
+  /**
+   * Set preferred model for a provider.
+   */
+  async setPreferredModel(
+    provider: AIProviderType,
+    modelId: string
+  ): Promise<{ success: boolean }> {
+    const payload: SetPreferredModelPayload = { provider, modelId }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_PREFERRED_MODEL, payload)
+  },
+
+  /**
+   * Set a UI preference.
+   */
+  async setUIPreference<K extends keyof UIPreferences>(
+    key: K,
+    value: UIPreferences[K]
+  ): Promise<{ success: boolean }> {
+    const payload: SetUIPreferencePayload = { key, value }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_UI_PREFERENCE, payload)
+  },
+
+  /**
+   * Set an export preference.
+   */
+  async setExportPreference<K extends keyof ExportPreferences>(
+    key: K,
+    value: ExportPreferences[K]
+  ): Promise<{ success: boolean }> {
+    const payload: SetExportPreferencePayload = { key, value }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_EXPORT_PREFERENCE, payload)
   }
 }
 

@@ -2,6 +2,8 @@ import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerAIIpcHandlers, removeAIIpcHandlers } from './ipc'
+import { getCurrentProvider } from './settings-service'
+import { setProviderConfig } from './ai-service'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -48,6 +50,12 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
+
+  // Load saved provider config into AI service
+  const savedProvider = getCurrentProvider()
+  if (savedProvider) {
+    setProviderConfig(savedProvider)
+  }
 
   // Register AI IPC handlers before creating the window
   registerAIIpcHandlers(() => mainWindow)

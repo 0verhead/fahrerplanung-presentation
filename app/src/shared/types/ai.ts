@@ -124,7 +124,23 @@ export const AI_IPC_CHANNELS = {
   /** Renderer -> Main: reveal file in system file explorer */
   REVEAL_IN_FINDER: 'ai:reveal-in-finder',
   /** Renderer -> Main: check if PDF export is available */
-  IS_PDF_EXPORT_AVAILABLE: 'ai:is-pdf-export-available'
+  IS_PDF_EXPORT_AVAILABLE: 'ai:is-pdf-export-available',
+
+  // Settings channels
+  /** Renderer -> Main: get all settings */
+  GET_SETTINGS: 'settings:get-all',
+  /** Renderer -> Main: set API key for a provider */
+  SET_API_KEY: 'settings:set-api-key',
+  /** Renderer -> Main: remove API key for a provider */
+  REMOVE_API_KEY: 'settings:remove-api-key',
+  /** Renderer -> Main: set preferred model for a provider */
+  SET_PREFERRED_MODEL: 'settings:set-preferred-model',
+  /** Renderer -> Main: set UI preference */
+  SET_UI_PREFERENCE: 'settings:set-ui-preference',
+  /** Renderer -> Main: set export preference */
+  SET_EXPORT_PREFERENCE: 'settings:set-export-preference',
+  /** Renderer -> Main: open settings window/modal */
+  OPEN_SETTINGS: 'settings:open'
 } as const
 
 // ---------------------------------------------------------------------------
@@ -281,4 +297,77 @@ export interface OpenPptxPayload {
 /** Payload for ai:reveal-in-finder */
 export interface RevealInFinderPayload {
   filePath: string
+}
+
+// ---------------------------------------------------------------------------
+// Settings types
+// ---------------------------------------------------------------------------
+
+/** Stored API keys */
+export interface StoredApiKeys {
+  openrouter?: string
+  anthropic?: string
+  openai?: string
+}
+
+/** UI preferences */
+export interface UIPreferences {
+  theme: 'dark' | 'light' | 'system'
+  showLineNumbers: boolean
+  wordWrap: boolean
+  editorFontSize: number
+  autoCompile: boolean
+}
+
+/** Export preferences */
+export interface ExportPreferences {
+  exportDirectory?: string
+  autoOpen: boolean
+  defaultFormat: 'pptx' | 'pdf'
+}
+
+/** Brand preferences */
+export interface BrandPreferences {
+  activeBrandKitId: string
+  activeThemeVariant: 'dark' | 'light'
+}
+
+/** Response for settings:get-all */
+export interface GetAllSettingsResponse {
+  apiKeys: StoredApiKeys
+  currentProvider: AIProviderConfig | null
+  uiPreferences: UIPreferences
+  exportPreferences: ExportPreferences
+  brandPreferences: BrandPreferences
+  modelPreferences: Record<AIProviderType, string>
+  configuredProviders: AIProviderType[]
+}
+
+/** Payload for settings:set-api-key */
+export interface SetApiKeyPayload {
+  provider: AIProviderType
+  apiKey: string
+}
+
+/** Payload for settings:remove-api-key */
+export interface RemoveApiKeyPayload {
+  provider: AIProviderType
+}
+
+/** Payload for settings:set-preferred-model */
+export interface SetPreferredModelPayload {
+  provider: AIProviderType
+  modelId: string
+}
+
+/** Payload for settings:set-ui-preference */
+export interface SetUIPreferencePayload {
+  key: keyof UIPreferences
+  value: UIPreferences[keyof UIPreferences]
+}
+
+/** Payload for settings:set-export-preference */
+export interface SetExportPreferencePayload {
+  key: keyof ExportPreferences
+  value: ExportPreferences[keyof ExportPreferences]
 }

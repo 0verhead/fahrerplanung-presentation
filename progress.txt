@@ -735,3 +735,76 @@
 - The export dropdown closes when clicking outside or selecting an option
 - Default export location is the user's Documents folder with timestamp suffix
 - Quick export goes to "~/Documents/Encore Exports/" for programmatic use
+
+---
+
+## Task 15: Settings & configuration (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Installed `electron-store@10.0.0` for persistent settings storage
+- Created comprehensive settings service (`app/src/main/settings-service.ts`) with:
+  - API key management (get/set/remove per provider)
+  - Provider configuration persistence
+  - UI preferences (theme, line numbers, word wrap, font size, auto-compile)
+  - Export preferences (auto-open, default format, export directory)
+  - Brand preferences (active brand kit, theme variant)
+  - Model preferences per provider
+  - Full settings retrieval for initial load
+- Added 6 new IPC channels for settings operations:
+  - `GET_SETTINGS` — Get all settings at once
+  - `SET_API_KEY` — Set API key for a provider
+  - `REMOVE_API_KEY` — Remove API key for a provider
+  - `SET_PREFERRED_MODEL` — Set preferred model for a provider
+  - `SET_UI_PREFERENCE` — Set a UI preference
+  - `SET_EXPORT_PREFERENCE` — Set an export preference
+- Created full-featured SettingsPanel UI component:
+  - Three-tab interface (API Keys, Appearance, Export)
+  - API key input with show/hide toggle and save/remove buttons
+  - Model selection dropdown per provider
+  - Provider activation (set as active)
+  - Brand kit selection grid
+  - Theme variant toggle (dark/light)
+  - Editor preferences (line numbers, word wrap, auto-compile, font size)
+  - Export preferences (auto-open, default format)
+  - Modal overlay with escape-to-close
+- Added Settings button to StatusBar with gear icon
+- Updated main process to load saved provider config on startup
+- Updated settings store to use new `getSettings()` API for complete initial load
+
+### Key decisions
+- **electron-store for persistence**: Simple, reliable JSON-based storage in the user's app data directory. No database complexity.
+- **Settings stored in user data**: Settings file at `~/Library/Application Support/Encore/encore-settings.json` (macOS) or equivalent on other platforms.
+- **Provider caching**: When API key or model changes for the active provider, the provider cache is cleared and config updated in both settings-service and ai-service.
+- **Masked API keys**: API keys are displayed as `••••••••••••••••` in the UI; users must clear and re-enter to change.
+- **Settings modal**: Full-screen modal overlay with sidebar navigation. Styled per design system with amber accents.
+- **On-startup provider loading**: The saved provider config is loaded into the AI service when the app starts, so users don't need to reconfigure after restart.
+
+### Files created
+- `app/src/main/settings-service.ts` — Persistent settings service (~290 lines)
+- `app/src/renderer/src/components/settings/SettingsPanel.tsx` — Settings UI (~600 lines)
+- `app/src/renderer/src/components/settings/index.ts` — Barrel export
+
+### Files modified
+- `app/package.json` — Added electron-store@10.0.0
+- `app/src/shared/types/ai.ts` — Added settings IPC channels and types (StoredApiKeys, UIPreferences, ExportPreferences, BrandPreferences, GetAllSettingsResponse, SetApiKeyPayload, etc.)
+- `app/src/main/ipc.ts` — Added 6 settings IPC handlers
+- `app/src/main/ai-service.ts` — Updated setProviderConfig to accept null
+- `app/src/main/index.ts` — Added startup loading of saved provider config
+- `app/src/preload/index.ts` — Added settings API methods
+- `app/src/preload/index.d.ts` — Added settings method type declarations
+- `app/src/renderer/src/App.tsx` — Added SettingsPanel integration with open/close state
+- `app/src/renderer/src/components/layout/StatusBar.tsx` — Added onOpenSettings prop and Settings button
+- `app/src/renderer/src/stores/settings.ts` — Updated loadSettings to use getSettings() API
+
+### Verification
+- `npm run lint` — PASS (zero issues after lint:fix)
+- `npm run format:check` — PASS
+- `npm run build` — PASS (main 182.48kB, preload 9.50kB, renderer 978.84kB)
+
+### Notes for next iteration
+- The settings modal includes all preferences but some (like theme) are not fully wired yet since the app is dark-mode only
+- API keys are stored in plaintext in electron-store; for production, consider using Electron's safeStorage API for encryption
+- The model list is hardcoded in the SettingsPanel; could be fetched dynamically from providers
+- The "Project/session management" task is the last remaining task in the spec

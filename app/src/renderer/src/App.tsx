@@ -1,9 +1,16 @@
+import { useState, useCallback } from 'react'
 import { ChatPanel } from './components/chat'
 import { CodeEditorPanel } from './components/editor'
 import { PanelLayout, StatusBar } from './components/layout'
 import { SlidePreviewPanel } from './components/preview'
+import { SettingsPanel } from './components/settings'
 
 function App(): React.JSX.Element {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+
+  const handleOpenSettings = useCallback(() => setIsSettingsOpen(true), [])
+  const handleCloseSettings = useCallback(() => setIsSettingsOpen(false), [])
+
   return (
     <div className="bg-atmosphere relative flex h-full flex-col overflow-hidden">
       {/* Subtle noise texture */}
@@ -29,8 +36,11 @@ function App(): React.JSX.Element {
 
       {/* Status bar */}
       <div className="relative z-10">
-        <StatusBar />
+        <StatusBar onOpenSettings={handleOpenSettings} />
       </div>
+
+      {/* Settings modal */}
+      <SettingsPanel isOpen={isSettingsOpen} onClose={handleCloseSettings} />
     </div>
   )
 }

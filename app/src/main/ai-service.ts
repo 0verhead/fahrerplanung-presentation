@@ -76,7 +76,7 @@ let currentThemeVariant: 'dark' | 'light' = 'dark'
 /**
  * Set the active AI provider configuration.
  */
-export function setProviderConfig(config: AIProviderConfig): void {
+export function setProviderConfig(config: AIProviderConfig | null): void {
   currentProviderConfig = config
 }
 

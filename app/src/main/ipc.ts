@@ -27,6 +27,16 @@ import {
   revealInFinder,
   isLibreOfficeAvailable
 } from './export-service'
+import {
+  getAllSettings,
+  setApiKey,
+  removeApiKey,
+  setPreferredModel,
+  setUIPreference,
+  setExportPreference,
+  setCurrentProvider,
+  getCurrentProvider as getStoredProvider
+} from './settings-service'
 import { clearProviderCache } from './ai-provider-registry'
 import { getCurrentTsx, setTsx, onTsxChange } from './tool-handlers'
 import {
@@ -47,7 +57,14 @@ import type {
   ExportPptxPayload,
   ExportPdfPayload,
   OpenPptxPayload,
-  RevealInFinderPayload
+  RevealInFinderPayload,
+  SetApiKeyPayload,
+  RemoveApiKeyPayload,
+  SetPreferredModelPayload,
+  SetUIPreferencePayload,
+  SetExportPreferencePayload,
+  UIPreferences,
+  ExportPreferences
 } from '../shared/types/ai'
 import { getAllBrandKitMeta } from '../shared/brand'
 
@@ -257,6 +274,89 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
   ipcMain.handle(AI_IPC_CHANNELS.IS_PDF_EXPORT_AVAILABLE, async () => {
     return { available: await isLibreOfficeAvailable() }
   })
+
+  // ---------------------------------------------------------------------------
+  // Settings Handlers
+  // ---------------------------------------------------------------------------
+
+  // --- Get all settings ---
+  ipcMain.handle(AI_IPC_CHANNELS.GET_SETTINGS, async () => {
+    return getAllSettings()
+  })
+
+  // --- Set API key for a provider ---
+  ipcMain.handle(AI_IPC_CHANNELS.SET_API_KEY, async (_event, payload: SetApiKeyPayload) => {
+    setApiKey(payload.provider, payload.apiKey)
+
+    // If this provider is currently active, update the provider config
+    const storedProvider = getStoredProvider()
+    if (storedProvider && storedProvider.type === payload.provider) {
+      const updatedConfig = { ...storedProvider, apiKey: payload.apiKey }
+      setCurrentProvider(updatedConfig)
+      setProviderConfig(updatedConfig)
+      clearProviderCache()
+    }
+
+    return { success: true }
+  })
+
+  // --- Remove API key for a provider ---
+  ipcMain.handle(AI_IPC_CHANNELS.REMOVE_API_KEY, async (_event, payload: RemoveApiKeyPayload) => {
+    removeApiKey(payload.provider)
+
+    // If this provider is currently active, clear the provider config
+    const storedProvider = getStoredProvider()
+    if (storedProvider && storedProvider.type === payload.provider) {
+      setCurrentProvider(null)
+      setProviderConfig(null)
+      clearProviderCache()
+    }
+
+    return { success: true }
+  })
+
+  // --- Set preferred model for a provider ---
+  ipcMain.handle(
+    AI_IPC_CHANNELS.SET_PREFERRED_MODEL,
+    async (_event, payload: SetPreferredModelPayload) => {
+      setPreferredModel(payload.provider, payload.modelId)
+
+      // If this provider is currently active, update the model
+      const storedProvider = getStoredProvider()
+      if (storedProvider && storedProvider.type === payload.provider) {
+        const updatedConfig = { ...storedProvider, modelId: payload.modelId }
+        setCurrentProvider(updatedConfig)
+        setProviderConfig(updatedConfig)
+        clearProviderCache()
+      }
+
+      return { success: true }
+    }
+  )
+
+  // --- Set UI preference ---
+  ipcMain.handle(
+    AI_IPC_CHANNELS.SET_UI_PREFERENCE,
+    async (_event, payload: SetUIPreferencePayload) => {
+      setUIPreference(
+        payload.key as keyof UIPreferences,
+        payload.value as UIPreferences[keyof UIPreferences]
+      )
+      return { success: true }
+    }
+  )
+
+  // --- Set export preference ---
+  ipcMain.handle(
+    AI_IPC_CHANNELS.SET_EXPORT_PREFERENCE,
+    async (_event, payload: SetExportPreferencePayload) => {
+      setExportPreference(
+        payload.key as keyof ExportPreferences,
+        payload.value as ExportPreferences[keyof ExportPreferences]
+      )
+      return { success: true }
+    }
+  )
 }
 
 /**
@@ -283,4 +383,11 @@ export function removeAIIpcHandlers(): void {
   ipcMain.removeHandler(AI_IPC_CHANNELS.EXPORT_PDF)
   ipcMain.removeHandler(AI_IPC_CHANNELS.OPEN_PPTX)
   ipcMain.removeHandler(AI_IPC_CHANNELS.IS_PDF_EXPORT_AVAILABLE)
+  // Settings handlers
+  ipcMain.removeHandler(AI_IPC_CHANNELS.GET_SETTINGS)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SET_API_KEY)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.REMOVE_API_KEY)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SET_PREFERRED_MODEL)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SET_UI_PREFERENCE)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SET_EXPORT_PREFERENCE)
 }
