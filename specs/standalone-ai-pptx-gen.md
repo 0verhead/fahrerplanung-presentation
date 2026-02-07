@@ -4,7 +4,7 @@ title: standalone-ai-pptx-gen
 status: in-progress
 priority: high
 created: 2026-02-07T00:00:00.000Z
-updated: 2026-02-07T04:05:00.000Z
+updated: 2026-02-07T04:30:00.000Z
 ---
 
 ## Summary
@@ -141,7 +141,7 @@ Encore is a standalone Electron desktop app that provides a Cursor-like AI-power
 ## Tasks
 
 - [x] **Project scaffolding** — Initialize Electron + React app under `app/` using `electron-vite@5.0.0`. Set up with Electron 40, Vite 7, React 19, TypeScript 5.9. Configure monorepo workspaces to include `packages/react-pptx-extended`.
-- [ ] **App UI design system (frontend-design skill)** — Design Encore's own interface with Tailwind CSS 4.1. Apply the skill: bold aesthetic direction, distinctive typography (loaded via `@fontsource/*`), cohesive color system via CSS variables, atmospheric backgrounds, purposeful motion. Create design tokens.
+- [x] **App UI design system (frontend-design skill)** — Design Encore's own interface with Tailwind CSS 4.1. Apply the skill: bold aesthetic direction, distinctive typography (loaded via `@fontsource/*`), cohesive color system via CSS variables, atmospheric backgrounds, purposeful motion. Create design tokens.
 - [ ] **Vercel AI SDK integration** — Install `ai@6.0.75`, `@openrouter/ai-sdk-provider@2.1.1`, `@ai-sdk/anthropic@3.0.38`, `@ai-sdk/openai@3.0.26`, `zod@3.25.76`. Set up `streamText()` pipeline in main process with provider registry. Bridge to renderer via Electron IPC for `useChat()`.
 - [ ] **AI system prompt** — Craft the prompt embedding: react-pptx-extended API reference (all components, props, types), the full `frontend-design` SKILL.md principles, theme token conventions, design best practices from AGENTS.md, tool-use instructions, and presentation structure guidelines.
 - [ ] **AI tool definitions** — Implement Zod-typed tools: `write_presentation_code`, `edit_presentation_code`, `compile_pptx`, `read_local_file`, `web_search`, `fetch_image`. Each with proper input schemas, execution handlers, and structured result types.

@@ -56,3 +56,52 @@
 - React 19.2.4 specified in spec is not yet published; using 19.1.0 which is latest available
 - The placeholder App.tsx will be replaced by the design system task
 - AI SDK dependencies will be added in the Vercel AI SDK integration task
+
+---
+
+## Task 2: App UI design system (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Installed Tailwind CSS 4.1.18 with @tailwindcss/vite plugin for Vite 7 integration
+- Installed distinctive typography: Bricolage Grotesque (display), Geist Sans (body), Geist Mono (code)
+- Configured @tailwindcss/vite in electron.vite.config.ts renderer plugins
+- Created comprehensive design token system via CSS custom properties
+- Set up Tailwind v4 CSS-first config with full custom @theme block
+- Created TypeScript token exports for programmatic access
+- Built utility classes: text presets (hero through caption), gradient text, noise texture, atmospheric backgrounds, glass effect, transition presets
+- Updated App.tsx to showcase the design system with Tailwind utilities
+- Added custom keyframe animations: fade-in, slide-up, slide-down, scale-in, pulse-glow, shimmer
+
+### Key decisions
+- **Aesthetic direction: "Refined Dark Studio"** — sophisticated, dark-first creative tool interface inspired by Linear, Raycast, and professional creative tools
+- **Accent color: Amber/Gold (#f5a623)** — "the spotlight" — conveys Encore's name (a second performance), warm and distinctive against the deep charcoal surfaces
+- **Font pairing**: Bricolage Grotesque (display) is a distinctive geometric grotesque with quirky character shapes — memorable and creative. Geist Sans (body) is Vercel's clean, modern typeface with excellent readability. Geist Mono for code contexts.
+- **Tailwind v4 CSS-first config** — all theme values defined in @theme block inside main.css, no separate tailwind.config file needed
+- **Dual token system** — CSS custom properties in tokens.css (used by Tailwind @theme and direct var() references) + TypeScript exports in tokens.ts (for programmatic use like canvas rendering)
+- **Surface scale**: 6-level elevation system (ground -> base -> raised -> overlay -> elevated -> highest) with subtle progression for depth hierarchy
+- **Border approach**: rgba(255,255,255, opacity) for consistent behavior across all surface levels
+
+### Files created
+- `app/src/renderer/src/design-system/tokens.css` — CSS custom properties for all design tokens
+- `app/src/renderer/src/design-system/tokens.ts` — TypeScript token exports
+- `app/src/renderer/src/design-system/index.ts` — Design system barrel export
+
+### Files modified
+- `app/package.json` — Added tailwindcss@4.1.18, @tailwindcss/vite@4.1.18, @fontsource-variable/bricolage-grotesque, @fontsource/geist-sans, @fontsource/geist-mono
+- `app/electron.vite.config.ts` — Added @tailwindcss/vite plugin to renderer config
+- `app/src/renderer/src/assets/main.css` — Complete rewrite: Tailwind v4 imports, font imports, design token import, @theme config, @layer base styles, utility classes, keyframe animations
+- `app/src/renderer/src/App.tsx` — Rewritten to use Tailwind utilities and design system classes
+
+### Verification
+- `npm run typecheck` — PASS (both node and web configs)
+- `npm run lint` — PASS (zero issues)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (all font files bundled correctly in output)
+
+### Notes for next iteration
+- Fonts are self-hosted via @fontsource (no external network requests needed)
+- The @theme block makes all custom colors/shadows/radii available as Tailwind utilities (e.g., bg-surface-raised, text-accent, shadow-glow)
+- Custom utility classes (text-display-hero, bg-atmosphere, bg-noise, glass, etc.) provide higher-level composition
+- Next tasks can use these tokens freely: state management (zustand), AI SDK integration, panel layouts, etc.
