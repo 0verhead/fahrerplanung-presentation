@@ -14,8 +14,8 @@ export { useEditorStore } from './editor'
 export type { PendingChange } from './editor'
 
 // Project store — save/load, project metadata
-export { useProjectStore } from './project'
-export type { ProjectMetadata, RecentProject } from './project'
+export { useProjectStore, startAutoSave, stopAutoSave } from './project'
+export type { ProjectMetadata } from './project'
 
 // Settings store — API keys, model, preferences
 export { useSettingsStore } from './settings'

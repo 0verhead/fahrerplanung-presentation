@@ -12,7 +12,13 @@ import type {
   ExportPdfResponse,
   GetAllSettingsResponse,
   UIPreferences,
-  ExportPreferences
+  ExportPreferences,
+  ProjectData,
+  GetCurrentProjectResponse,
+  SaveProjectResponse,
+  LoadProjectResponse,
+  ListRecentProjectsResponse,
+  ProjectChangedEvent
 } from '../shared/types/ai'
 
 /** AI API exposed from the preload script */
@@ -71,6 +77,20 @@ interface EncoreAIApi {
     key: K,
     value: ExportPreferences[K]
   ): Promise<{ success: boolean }>
+
+  // Project management
+  getProject(): Promise<GetCurrentProjectResponse>
+  createProject(name?: string): Promise<{ success: boolean; project?: ProjectData }>
+  saveProject(forceNewPath?: boolean): Promise<SaveProjectResponse>
+  loadProject(options: { path?: string; projectId?: string }): Promise<LoadProjectResponse>
+  listRecentProjects(): Promise<ListRecentProjectsResponse>
+  deleteProject(projectId: string): Promise<{ success: boolean }>
+  closeProject(): Promise<{ success: boolean }>
+  updateProjectMetadata(updates: {
+    name?: string
+    description?: string
+  }): Promise<{ success: boolean }>
+  onProjectChanged(callback: (event: ProjectChangedEvent) => void): () => void
 }
 
 declare global {

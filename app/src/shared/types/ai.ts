@@ -140,7 +140,27 @@ export const AI_IPC_CHANNELS = {
   /** Renderer -> Main: set export preference */
   SET_EXPORT_PREFERENCE: 'settings:set-export-preference',
   /** Renderer -> Main: open settings window/modal */
-  OPEN_SETTINGS: 'settings:open'
+  OPEN_SETTINGS: 'settings:open',
+
+  // Project management channels
+  /** Renderer -> Main: get current project */
+  GET_PROJECT: 'project:get-current',
+  /** Renderer -> Main: create new project */
+  CREATE_PROJECT: 'project:create',
+  /** Renderer -> Main: save current project */
+  SAVE_PROJECT: 'project:save',
+  /** Renderer -> Main: load a project */
+  LOAD_PROJECT: 'project:load',
+  /** Renderer -> Main: get recent projects list */
+  LIST_RECENT_PROJECTS: 'project:list-recent',
+  /** Renderer -> Main: delete a project */
+  DELETE_PROJECT: 'project:delete',
+  /** Renderer -> Main: close current project */
+  CLOSE_PROJECT: 'project:close',
+  /** Renderer -> Main: update project metadata */
+  UPDATE_PROJECT_METADATA: 'project:update-metadata',
+  /** Main -> Renderer: project state changed */
+  PROJECT_CHANGED: 'project:changed'
 } as const
 
 // ---------------------------------------------------------------------------
@@ -370,4 +390,105 @@ export interface SetUIPreferencePayload {
 export interface SetExportPreferencePayload {
   key: keyof ExportPreferences
   value: ExportPreferences[keyof ExportPreferences]
+}
+
+// ---------------------------------------------------------------------------
+// Project types
+// ---------------------------------------------------------------------------
+
+/** Project metadata */
+export interface ProjectMetadata {
+  /** Unique project ID */
+  id: string
+  /** User-defined project name */
+  name: string
+  /** Optional description */
+  description?: string
+  /** Creation timestamp (ISO) */
+  createdAt: string
+  /** Last modified timestamp (ISO) */
+  updatedAt: string
+  /** Version number for compatibility */
+  version: number
+}
+
+/** Full project data structure */
+export interface ProjectData {
+  /** Project metadata */
+  metadata: ProjectMetadata
+  /** Conversation history (ChatMessage format for portability) */
+  conversation: ChatMessage[]
+  /** Current TSX source code */
+  tsxSource: string
+  /** Path to the last compiled PPTX (relative to project) */
+  lastPptxPath?: string
+}
+
+/** Recent project entry for quick access */
+export interface RecentProject {
+  id: string
+  name: string
+  path: string
+  lastOpened: string
+  description?: string
+}
+
+/** Response for project:get-current */
+export interface GetCurrentProjectResponse {
+  project: ProjectData | null
+  path: string | null
+  isDirty: boolean
+}
+
+/** Payload for project:create */
+export interface CreateProjectPayload {
+  name?: string
+}
+
+/** Payload for project:save */
+export interface SaveProjectPayload {
+  forceNewPath?: boolean
+}
+
+/** Response for project:save */
+export interface SaveProjectResponse {
+  success: boolean
+  path?: string
+  error?: string
+}
+
+/** Payload for project:load */
+export interface LoadProjectPayload {
+  path?: string
+  projectId?: string
+}
+
+/** Response for project:load */
+export interface LoadProjectResponse {
+  success: boolean
+  project?: ProjectData
+  error?: string
+}
+
+/** Response for project:list-recent */
+export interface ListRecentProjectsResponse {
+  projects: RecentProject[]
+}
+
+/** Payload for project:delete */
+export interface DeleteProjectPayload {
+  projectId: string
+}
+
+/** Payload for project:update-metadata */
+export interface UpdateProjectMetadataPayload {
+  name?: string
+  description?: string
+}
+
+/** Event emitted when project state changes */
+export interface ProjectChangedEvent {
+  project: ProjectData | null
+  path: string | null
+  isDirty: boolean
 }

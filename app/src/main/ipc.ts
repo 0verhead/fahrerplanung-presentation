@@ -18,7 +18,8 @@ import {
   setBrandKit,
   getCurrentBrandKitId,
   setThemeVariant,
-  getCurrentThemeVariant
+  getCurrentThemeVariant,
+  setCurrentTsx
 } from './ai-service'
 import {
   exportPptx,
@@ -37,6 +38,21 @@ import {
   setCurrentProvider,
   getCurrentProvider as getStoredProvider
 } from './settings-service'
+import {
+  createProject,
+  saveProject,
+  loadProject,
+  loadProjectById,
+  getRecentProjects,
+  deleteProject,
+  closeProject,
+  updateProjectMetadata,
+  updateConversation,
+  updateTsxSource,
+  setOnDirtyChange,
+  exportProjectForIpc,
+  type ProjectData
+} from './project-service'
 import { clearProviderCache } from './ai-provider-registry'
 import { getCurrentTsx, setTsx, onTsxChange } from './tool-handlers'
 import {
@@ -64,7 +80,13 @@ import type {
   SetUIPreferencePayload,
   SetExportPreferencePayload,
   UIPreferences,
-  ExportPreferences
+  ExportPreferences,
+  CreateProjectPayload,
+  SaveProjectPayload,
+  LoadProjectPayload,
+  DeleteProjectPayload,
+  UpdateProjectMetadataPayload,
+  ProjectChangedEvent
 } from '../shared/types/ai'
 import { getAllBrandKitMeta } from '../shared/brand'
 
@@ -357,6 +379,111 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
       return { success: true }
     }
   )
+
+  // ---------------------------------------------------------------------------
+  // Project Management Handlers
+  // ---------------------------------------------------------------------------
+
+  // Register callback to forward project state changes to renderer
+  setOnDirtyChange(() => {
+    const win = getMainWindow()
+    if (win && !win.isDestroyed()) {
+      const state = exportProjectForIpc()
+      const event: ProjectChangedEvent = {
+        project: state.project,
+        path: state.path,
+        isDirty: state.isDirty
+      }
+      win.webContents.send(AI_IPC_CHANNELS.PROJECT_CHANGED, event)
+    }
+  })
+
+  // --- Get current project ---
+  ipcMain.handle(AI_IPC_CHANNELS.GET_PROJECT, async () => {
+    return exportProjectForIpc()
+  })
+
+  // --- Create new project ---
+  ipcMain.handle(AI_IPC_CHANNELS.CREATE_PROJECT, async (_event, payload: CreateProjectPayload) => {
+    // Clear existing conversation and TSX state
+    clearHistory()
+    setCurrentTsx(undefined)
+    setTsx('')
+
+    // Create the new project
+    const project = createProject(payload.name)
+    return { success: true, project }
+  })
+
+  // --- Save current project ---
+  ipcMain.handle(AI_IPC_CHANNELS.SAVE_PROJECT, async (_event, payload: SaveProjectPayload) => {
+    // Sync current conversation and TSX to project before saving
+    const history = getHistory()
+    const tsx = getCurrentTsx()
+    updateConversation(history)
+    updateTsxSource(tsx)
+
+    const path = await saveProject(payload.forceNewPath)
+    if (path) {
+      return { success: true, path }
+    }
+    return { success: false, error: 'Failed to save project' }
+  })
+
+  // --- Load a project ---
+  ipcMain.handle(AI_IPC_CHANNELS.LOAD_PROJECT, async (_event, payload: LoadProjectPayload) => {
+    let project: ProjectData | null = null
+
+    if (payload.path) {
+      project = await loadProject(payload.path)
+    } else if (payload.projectId) {
+      project = await loadProjectById(payload.projectId)
+    }
+
+    if (project) {
+      // Restore conversation history to AI service
+      clearHistory()
+      // Note: We can't directly restore ModelMessage history to AI service
+      // The simplified ChatMessage history is for display purposes
+
+      // Restore TSX source
+      setCurrentTsx(project.tsxSource)
+      setTsx(project.tsxSource)
+
+      return { success: true, project }
+    }
+    return { success: false, error: 'Failed to load project' }
+  })
+
+  // --- List recent projects ---
+  ipcMain.handle(AI_IPC_CHANNELS.LIST_RECENT_PROJECTS, async () => {
+    const projects = await getRecentProjects()
+    return { projects }
+  })
+
+  // --- Delete a project ---
+  ipcMain.handle(AI_IPC_CHANNELS.DELETE_PROJECT, async (_event, payload: DeleteProjectPayload) => {
+    const success = await deleteProject(payload.projectId)
+    return { success }
+  })
+
+  // --- Close current project ---
+  ipcMain.handle(AI_IPC_CHANNELS.CLOSE_PROJECT, async () => {
+    closeProject()
+    clearHistory()
+    setCurrentTsx(undefined)
+    setTsx('')
+    return { success: true }
+  })
+
+  // --- Update project metadata ---
+  ipcMain.handle(
+    AI_IPC_CHANNELS.UPDATE_PROJECT_METADATA,
+    async (_event, payload: UpdateProjectMetadataPayload) => {
+      updateProjectMetadata(payload)
+      return { success: true }
+    }
+  )
 }
 
 /**
@@ -390,4 +517,13 @@ export function removeAIIpcHandlers(): void {
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_PREFERRED_MODEL)
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_UI_PREFERENCE)
   ipcMain.removeHandler(AI_IPC_CHANNELS.SET_EXPORT_PREFERENCE)
+  // Project handlers
+  ipcMain.removeHandler(AI_IPC_CHANNELS.GET_PROJECT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.CREATE_PROJECT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SAVE_PROJECT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.LOAD_PROJECT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.LIST_RECENT_PROJECTS)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.DELETE_PROJECT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.CLOSE_PROJECT)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.UPDATE_PROJECT_METADATA)
 }

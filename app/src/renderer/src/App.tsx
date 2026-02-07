@@ -1,15 +1,26 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { ChatPanel } from './components/chat'
 import { CodeEditorPanel } from './components/editor'
 import { PanelLayout, StatusBar } from './components/layout'
 import { SlidePreviewPanel } from './components/preview'
 import { SettingsPanel } from './components/settings'
+import { ProjectMenu } from './components/project'
+import { useProjectStore, startAutoSave, stopAutoSave } from './stores'
 
 function App(): React.JSX.Element {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const handleOpenSettings = useCallback(() => setIsSettingsOpen(true), [])
   const handleCloseSettings = useCallback(() => setIsSettingsOpen(false), [])
+
+  // Initialize project store and auto-save on mount
+  const initialize = useProjectStore((s) => s.initialize)
+
+  useEffect(() => {
+    initialize()
+    startAutoSave()
+    return () => stopAutoSave()
+  }, [initialize])
 
   return (
     <div className="bg-atmosphere relative flex h-full flex-col overflow-hidden">
@@ -24,6 +35,11 @@ function App(): React.JSX.Element {
             'linear-gradient(90deg, transparent 0%, var(--accent-default) 40%, var(--accent-bright) 60%, transparent 100%)'
         }}
       />
+
+      {/* Title bar with project menu */}
+      <div className="relative z-10 flex h-10 flex-shrink-0 items-center border-b border-border bg-surface-base px-3">
+        <ProjectMenu />
+      </div>
 
       {/* Main content area — Three-panel resizable layout */}
       <div className="relative z-10 flex-1 overflow-hidden">

@@ -27,7 +27,18 @@ import type {
   SetUIPreferencePayload,
   SetExportPreferencePayload,
   UIPreferences,
-  ExportPreferences
+  ExportPreferences,
+  ProjectData,
+  GetCurrentProjectResponse,
+  CreateProjectPayload,
+  SaveProjectPayload,
+  SaveProjectResponse,
+  LoadProjectPayload,
+  LoadProjectResponse,
+  ListRecentProjectsResponse,
+  DeleteProjectPayload,
+  UpdateProjectMetadataPayload,
+  ProjectChangedEvent
 } from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
@@ -302,6 +313,91 @@ const aiApi = {
   ): Promise<{ success: boolean }> {
     const payload: SetExportPreferencePayload = { key, value }
     return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_EXPORT_PREFERENCE, payload)
+  },
+
+  // ---------------------------------------------------------------------------
+  // Project API
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Get the current project state.
+   */
+  async getProject(): Promise<GetCurrentProjectResponse> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_PROJECT)
+  },
+
+  /**
+   * Create a new project.
+   */
+  async createProject(name?: string): Promise<{ success: boolean; project?: ProjectData }> {
+    const payload: CreateProjectPayload = { name }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.CREATE_PROJECT, payload)
+  },
+
+  /**
+   * Save the current project.
+   */
+  async saveProject(forceNewPath?: boolean): Promise<SaveProjectResponse> {
+    const payload: SaveProjectPayload = { forceNewPath }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SAVE_PROJECT, payload)
+  },
+
+  /**
+   * Load a project by path or ID.
+   */
+  async loadProject(options: { path?: string; projectId?: string }): Promise<LoadProjectResponse> {
+    const payload: LoadProjectPayload = options
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.LOAD_PROJECT, payload)
+  },
+
+  /**
+   * Get the list of recent projects.
+   */
+  async listRecentProjects(): Promise<ListRecentProjectsResponse> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.LIST_RECENT_PROJECTS)
+  },
+
+  /**
+   * Delete a project by ID.
+   */
+  async deleteProject(projectId: string): Promise<{ success: boolean }> {
+    const payload: DeleteProjectPayload = { projectId }
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.DELETE_PROJECT, payload)
+  },
+
+  /**
+   * Close the current project without saving.
+   */
+  async closeProject(): Promise<{ success: boolean }> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.CLOSE_PROJECT)
+  },
+
+  /**
+   * Update the current project's metadata.
+   */
+  async updateProjectMetadata(updates: {
+    name?: string
+    description?: string
+  }): Promise<{ success: boolean }> {
+    const payload: UpdateProjectMetadataPayload = updates
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.UPDATE_PROJECT_METADATA, payload)
+  },
+
+  /**
+   * Register a callback for project state changes.
+   * Returns an unsubscribe function.
+   */
+  onProjectChanged(callback: (event: ProjectChangedEvent) => void): () => void {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      projectEvent: ProjectChangedEvent
+    ): void => {
+      callback(projectEvent)
+    }
+    ipcRenderer.on(AI_IPC_CHANNELS.PROJECT_CHANGED, handler)
+    return () => {
+      ipcRenderer.removeListener(AI_IPC_CHANNELS.PROJECT_CHANGED, handler)
+    }
   }
 }
 
