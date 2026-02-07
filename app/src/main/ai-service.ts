@@ -17,6 +17,7 @@ import type { ModelMessage } from '@ai-sdk/provider-utils'
 import { createLanguageModel } from './ai-provider-registry'
 import type { AIProviderConfig, AIStreamEvent, AIUsageInfo, ChatMessage } from '../shared/types/ai'
 import { DEFAULT_MODELS } from '../shared/types/ai'
+import { getSystemPrompt } from '../shared/prompts/system'
 
 // ---------------------------------------------------------------------------
 // Session state
@@ -38,21 +39,8 @@ let activeAbortController: AbortController | null = null
 /** Maximum autonomous agent steps before forcing stop */
 const MAX_AGENT_STEPS = 10
 
-/**
- * Placeholder system prompt — will be replaced by the AI system prompt task
- * with the full frontend-design skill, react-pptx-extended API reference, etc.
- */
-const SYSTEM_PROMPT = `You are Encore, an AI-powered presentation design assistant.
-You help users create beautiful, distinctive PowerPoint presentations using React-PPTX.
-You write TSX code that compiles to .pptx files with professional design quality.
-
-When designing presentations:
-- Use distinctive typography, not generic system fonts
-- Create atmospheric backgrounds with depth (gradients, textures, patterns)
-- Apply unexpected spatial composition, not predictable centered layouts
-- Add proper shadows and elevation to create visual hierarchy
-- Make each slide memorable with a clear "hero moment"
-- Never produce generic "corporate PowerPoint" aesthetics`
+/** Current TSX source — tracked so the system prompt can include it as context */
+let currentTsxSource: string | undefined
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -89,6 +77,14 @@ export function getHistory(): ChatMessage[] {
  */
 export function clearHistory(): void {
   conversationHistory = []
+}
+
+/**
+ * Update the current TSX source code context.
+ * This is injected into the system prompt so the AI knows the current state.
+ */
+export function setCurrentTsx(tsx: string | undefined): void {
+  currentTsxSource = tsx
 }
 
 /**
@@ -144,7 +140,7 @@ export async function streamChat(
     // Execute the streaming pipeline
     const result = streamText({
       model,
-      system: SYSTEM_PROMPT,
+      system: getSystemPrompt(currentTsxSource),
       messages: conversationHistory,
       abortSignal: abortController.signal,
 

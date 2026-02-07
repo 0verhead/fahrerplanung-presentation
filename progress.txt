@@ -157,3 +157,49 @@
 - Tools are not wired yet — the `tools: {}` parameter is commented out in streamText; the "AI tool definitions" task should add Zod-typed tools
 - `@ai-sdk/react` with `useChat()` should be added when building the Chat Panel (renderer-side concern)
 - The IPC streaming architecture is ready: renderer calls `window.api.sendMessage()`, listens via `window.api.onStreamEvent()`, and can abort via `window.api.abort()`
+
+---
+
+## Task 4: AI system prompt (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Created comprehensive system prompt in `app/src/shared/prompts/system.ts` with 6 modular sections:
+  1. **Identity** — Defines Encore as an expert AI presentation designer with a clear workflow
+  2. **API Reference** — Complete react-pptx-extended documentation: all components (Presentation, Slide, Text, Text.Link, Text.Bullet, Shape, Image, Line, Table, Table.Cell, MasterSlide), all props with types, coordinate system, color format, shadow/glow effects, compilation API
+  3. **Design Skill** — Full frontend-design SKILL.md principles embedded: typography rules (with forbidden/recommended fonts), color & atmosphere, spatial composition, shadows & depth, visual memorability, anti-patterns
+  4. **Structure Guidelines** — Recommended slide types (title, problem, solution, features, metrics, CTA), content principles, dimensions, design variations
+  5. **Tool Instructions** — Usage guides for all 6 planned tools (write_presentation_code, edit_presentation_code, compile_pptx, read_local_file, web_search, fetch_image) with autonomous workflow description
+  6. **Code Patterns** — Complete TSX template with best practices, key rules (string children, shadow hex format, inches coordinate system, etc.)
+- Added `getSystemPrompt(currentTsx?)` function that optionally injects the current TSX source code as context
+- Updated `ai-service.ts` to import and use `getSystemPrompt()` instead of the placeholder
+- Added `setCurrentTsx()` function to ai-service for updating the current TSX context
+- Added `currentTsxSource` state variable to track the active presentation code
+
+### Key decisions
+- **Modular prompt architecture**: The prompt is assembled from 6 named const sections joined with `---` separators. This makes each section independently maintainable and readable.
+- **getSystemPrompt(currentTsx?)**: Dynamic function rather than static string, so the current presentation TSX can be injected as context. This ensures the AI always knows the current state of the code when making edits.
+- **Comprehensive API reference**: Documented every component, every prop, every type — including the extended features (shadow, glow, rotation, rectRadius, transparency, rounding, borderDash, flipH/flipV). This is critical for the AI to write correct TSX.
+- **Forbidden fonts list**: Explicitly lists Arial, Inter, Roboto, Segoe UI as NEVER to use, and provides a curated list of distinctive alternatives (Helvetica Neue, Garamond, Georgia, Futura, etc.)
+- **Anti-patterns section**: Explicitly describes what NOT to do (generic corporate PowerPoint, predictable centered layouts, etc.) to prevent mediocre output
+- **Code template with variables pattern**: Shows the recommended approach of defining color/font objects at the top of the component, not inlining magic values
+- **Shadow hex format note**: Explicitly documents that `shadow.color` uses hex WITHOUT # prefix (common gotcha)
+
+### Files created
+- `app/src/shared/prompts/system.ts` — Comprehensive AI system prompt (6 sections, ~350 lines)
+
+### Files modified
+- `app/src/main/ai-service.ts` — Replaced placeholder SYSTEM_PROMPT with import of getSystemPrompt(); added setCurrentTsx() and currentTsxSource state
+
+### Verification
+- `npm run typecheck` — PASS (both node and web configs)
+- `npm run lint` — PASS (zero issues)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (main 29.41kB with prompt content, preload 2.38kB, renderer 536.9kB)
+
+### Notes for next iteration
+- The tool instructions section references tools that don't exist yet — they will be implemented in the "AI tool definitions" task
+- The system prompt is ~5-6K tokens which is reasonable for a comprehensive reference; could be trimmed if token budgets become an issue
+- The `setCurrentTsx()` function should be called by the compilation engine when TSX is updated (either by AI tool or user editor)
+- Font recommendations in the prompt are limited to fonts commonly available in PowerPoint; the compilation engine doesn't bundle fonts, so the output depends on the viewer's installed fonts
