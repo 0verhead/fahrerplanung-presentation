@@ -342,3 +342,61 @@
 - The "Panel layout & micro-interactions" task will add resizable split panes and the Cursor-like code panel toggle
 - Tool call indicators are ready to display actual tool activity once the compilation engine is implemented
 - The empty state suggestions are clickable but don't auto-send yet (could be enhanced later)
+
+---
+
+## Task 8: Code editor panel (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Installed `@monaco-editor/react@4.7.0` and `monaco-editor@0.55.1` per spec versions
+- Created CodeEditorPanel component with full Monaco editor integration:
+  - Custom "encore-dark" theme matching the Encore design system (surface colors, accent colors, syntax highlighting)
+  - TSX/TypeScript syntax highlighting with semantic token colors
+  - TypeScript compiler options configured for React JSX support
+  - Minimap, bracket pair colorization, smooth scrolling, word wrap
+- Implemented IPC channels for TSX code synchronization:
+  - `GET_TSX` / `SET_TSX` handlers for getting/setting code
+  - `TSX_CHANGED` event for notifying renderer of AI code changes
+  - `onTsxChange` callback in tool-handlers.ts for AI tool integration
+- Implemented diff view for AI changes with accept/reject:
+  - Monaco DiffEditor shows side-by-side comparison
+  - Accept button applies AI changes, Reject button discards them
+  - Triggered automatically when AI uses `write_presentation_code` or `edit_presentation_code` tools
+- Debounced editor updates (500ms) to main process for user edits
+- Empty state and loading state with design system styling
+- Updated App.tsx with three-panel layout (chat, editor, preview placeholder)
+
+### Key decisions
+- **Custom Monaco theme**: Created `encore-dark` theme that matches the Encore design system exactly — surface colors (#0c0c0f, #111114), amber accent (#f5a623), syntax colors matching the semantic palette
+- **Diff view for AI changes**: When the AI writes or edits code, the user sees a side-by-side diff and can accept or reject. This provides Cursor-like accept/reject workflow.
+- **Debounced updates**: User edits are debounced at 500ms before syncing to main process to avoid excessive IPC traffic
+- **Monaco loader config**: Configured to load from node_modules (bundled with Vite build)
+- **Language set to "typescript"**: Monaco's TypeScript mode handles TSX/JSX automatically with proper compiler options
+- **TypeScript compiler options**: Configured for React JSX emit, ESNext target, Node module resolution
+
+### Files created
+- `app/src/renderer/src/components/editor/CodeEditorPanel.tsx` — Monaco editor panel component (~350 lines)
+- `app/src/renderer/src/components/editor/index.ts` — Barrel export
+
+### Files modified
+- `app/package.json` — Added @monaco-editor/react@4.7.0, monaco-editor@0.55.1
+- `app/src/shared/types/ai.ts` — Added `GET_TSX`, `SET_TSX`, `TSX_CHANGED` IPC channels; added `TsxChangedEvent` type
+- `app/src/main/tool-handlers.ts` — Added `setTsx()`, `onTsxChange()` for user edits and AI change notification
+- `app/src/main/ipc.ts` — Added handlers for `GET_TSX`, `SET_TSX`; registered `onTsxChange` callback for AI -> renderer notification
+- `app/src/preload/index.ts` — Added `getTsx()`, `setTsx()`, `onTsxChanged()` API methods
+- `app/src/preload/index.d.ts` — Added types for new API methods
+- `app/src/renderer/src/App.tsx` — Updated to three-panel layout with CodeEditorPanel
+
+### Verification
+- `npm run lint` — PASS (zero issues after lint:fix)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (main 47.12kB, preload 3.32kB, renderer 890.70kB with Monaco)
+
+### Notes for next iteration
+- The Slide Preview panel is now a placeholder — the "Slide preview panel" task will render compiled slide PNGs
+- The "Panel layout & micro-interactions" task will add resizable split panes
+- Monaco worker files are bundled by Vite — no manual configuration needed
+- The diff view is read-only; user must accept/reject, then edit in normal mode
+- Renderer bundle size increased to ~890KB due to Monaco — could be optimized with dynamic imports if needed

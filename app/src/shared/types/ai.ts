@@ -92,8 +92,28 @@ export const AI_IPC_CHANNELS = {
   /** Renderer -> Main: clear conversation history */
   CLEAR_HISTORY: 'ai:clear-history',
   /** Renderer -> Main: get conversation history */
-  GET_HISTORY: 'ai:get-history'
+  GET_HISTORY: 'ai:get-history',
+  /** Renderer -> Main: get current TSX source */
+  GET_TSX: 'ai:get-tsx',
+  /** Renderer -> Main: set TSX source (from user edits) */
+  SET_TSX: 'ai:set-tsx',
+  /** Main -> Renderer: TSX code has changed (from AI or compilation) */
+  TSX_CHANGED: 'ai:tsx-changed'
 } as const
+
+// ---------------------------------------------------------------------------
+// Code editor types
+// ---------------------------------------------------------------------------
+
+/** Event emitted when TSX source changes */
+export interface TsxChangedEvent {
+  /** The new TSX source code */
+  code: string
+  /** Source of the change */
+  source: 'ai' | 'user' | 'initial'
+  /** Optional: the previous code (for diff view) */
+  previousCode?: string
+}
 
 // ---------------------------------------------------------------------------
 // IPC request/response payloads

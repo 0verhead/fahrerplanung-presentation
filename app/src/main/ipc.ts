@@ -17,8 +17,9 @@ import {
   abortGeneration
 } from './ai-service'
 import { clearProviderCache } from './ai-provider-registry'
+import { getCurrentTsx, setTsx, onTsxChange } from './tool-handlers'
 import { AI_IPC_CHANNELS } from '../shared/types/ai'
-import type { SendMessagePayload, SetProviderPayload } from '../shared/types/ai'
+import type { SendMessagePayload, SetProviderPayload, TsxChangedEvent } from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -73,6 +74,30 @@ export function registerAIIpcHandlers(getMainWindow: () => BrowserWindow | null)
   ipcMain.handle(AI_IPC_CHANNELS.GET_HISTORY, async () => {
     return { messages: getHistory() }
   })
+
+  // --- Get current TSX source ---
+  ipcMain.handle(AI_IPC_CHANNELS.GET_TSX, async () => {
+    return { code: getCurrentTsx() }
+  })
+
+  // --- Set TSX source (from user edits) ---
+  ipcMain.handle(AI_IPC_CHANNELS.SET_TSX, async (_event, payload: { code: string }) => {
+    setTsx(payload.code)
+    return { success: true }
+  })
+
+  // --- Register callback to forward TSX changes from AI to renderer ---
+  onTsxChange((code, previousCode) => {
+    const win = getMainWindow()
+    if (win && !win.isDestroyed()) {
+      const event: TsxChangedEvent = {
+        code,
+        source: 'ai',
+        previousCode
+      }
+      win.webContents.send(AI_IPC_CHANNELS.TSX_CHANGED, event)
+    }
+  })
 }
 
 /**
@@ -85,4 +110,6 @@ export function removeAIIpcHandlers(): void {
   ipcMain.removeHandler(AI_IPC_CHANNELS.GET_PROVIDER)
   ipcMain.removeHandler(AI_IPC_CHANNELS.CLEAR_HISTORY)
   ipcMain.removeHandler(AI_IPC_CHANNELS.GET_HISTORY)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.GET_TSX)
+  ipcMain.removeHandler(AI_IPC_CHANNELS.SET_TSX)
 }

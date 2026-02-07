@@ -6,7 +6,8 @@ import type {
   AIStreamEvent,
   ChatMessage,
   SendMessagePayload,
-  SetProviderPayload
+  SetProviderPayload,
+  TsxChangedEvent
 } from '../shared/types/ai'
 
 // ---------------------------------------------------------------------------
@@ -71,6 +72,34 @@ const aiApi = {
    */
   async getHistory(): Promise<{ messages: ChatMessage[] }> {
     return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_HISTORY)
+  },
+
+  /**
+   * Get the current TSX source code.
+   */
+  async getTsx(): Promise<{ code: string }> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.GET_TSX)
+  },
+
+  /**
+   * Set the TSX source code (from user edits).
+   */
+  async setTsx(code: string): Promise<{ success: boolean }> {
+    return ipcRenderer.invoke(AI_IPC_CHANNELS.SET_TSX, { code })
+  },
+
+  /**
+   * Register a callback for TSX code changes (from AI or other sources).
+   * Returns an unsubscribe function.
+   */
+  onTsxChanged(callback: (event: TsxChangedEvent) => void): () => void {
+    const handler = (_event: Electron.IpcRendererEvent, tsxEvent: TsxChangedEvent): void => {
+      callback(tsxEvent)
+    }
+    ipcRenderer.on(AI_IPC_CHANNELS.TSX_CHANGED, handler)
+    return () => {
+      ipcRenderer.removeListener(AI_IPC_CHANNELS.TSX_CHANGED, handler)
+    }
   }
 }
 

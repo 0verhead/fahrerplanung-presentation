@@ -39,9 +39,30 @@ import { setCurrentTsx } from './ai-service'
 /** The current TSX source code for the presentation */
 let currentTsxSource: string = ''
 
+/** Callback for when TSX source changes (set by IPC handlers) */
+let onTsxChangeCallback: ((code: string, previousCode: string) => void) | null = null
+
 /** Get the current TSX source */
 export function getCurrentTsx(): string {
   return currentTsxSource
+}
+
+/**
+ * Set the current TSX source from user edits.
+ * Updates both local state and AI context.
+ */
+export function setTsx(code: string): void {
+  const previousCode = currentTsxSource
+  currentTsxSource = code
+  setCurrentTsx(code)
+  if (onTsxChangeCallback) {
+    onTsxChangeCallback(code, previousCode)
+  }
+}
+
+/** Register a callback for TSX changes (from AI tools) */
+export function onTsxChange(callback: (code: string, previousCode: string) => void): void {
+  onTsxChangeCallback = callback
 }
 
 // ---------------------------------------------------------------------------
@@ -103,8 +124,14 @@ export async function handleWritePresentationCode(
   input: WritePresentationCodeInput
 ): Promise<WritePresentationCodeResult> {
   try {
+    const previousCode = currentTsxSource
     currentTsxSource = input.code
     setCurrentTsx(currentTsxSource)
+
+    // Notify of TSX change (for editor sync)
+    if (onTsxChangeCallback) {
+      onTsxChangeCallback(currentTsxSource, previousCode)
+    }
 
     const lineCount = input.code.split('\n').length
     return { success: true, lineCount }
@@ -168,8 +195,14 @@ export async function handleEditPresentationCode(
   }
 
   // Update state
+  const previousCode = currentTsxSource
   currentTsxSource = source
   setCurrentTsx(currentTsxSource)
+
+  // Notify of TSX change (for editor sync)
+  if (onTsxChangeCallback) {
+    onTsxChangeCallback(currentTsxSource, previousCode)
+  }
 
   const lineCount = source.split('\n').length
   const allApplied = appliedCount === input.edits.length
