@@ -1,10 +1,11 @@
 import { ChatPanel } from './components/chat'
 import { CodeEditorPanel } from './components/editor'
+import { PanelLayout, StatusBar } from './components/layout'
 import { SlidePreviewPanel } from './components/preview'
 
 function App(): React.JSX.Element {
   return (
-    <div className="bg-atmosphere relative flex h-full overflow-hidden">
+    <div className="bg-atmosphere relative flex h-full flex-col overflow-hidden">
       {/* Subtle noise texture */}
       <div className="bg-noise pointer-events-none absolute inset-0 z-0" />
 
@@ -17,23 +18,18 @@ function App(): React.JSX.Element {
         }}
       />
 
-      {/* Main content area — Three-panel layout (chat, editor, preview) */}
-      {/* TODO: Add resizable panels in "Panel layout & micro-interactions" task */}
-      <div className="relative z-10 flex h-full w-full">
-        {/* Chat panel — fixed width */}
-        <div className="flex h-full w-80 min-w-72 max-w-md flex-col border-r border-border">
-          <ChatPanel />
-        </div>
+      {/* Main content area — Three-panel resizable layout */}
+      <div className="relative z-10 flex-1 overflow-hidden">
+        <PanelLayout
+          chatPanel={<ChatPanel />}
+          editorPanel={<CodeEditorPanel />}
+          previewPanel={<SlidePreviewPanel />}
+        />
+      </div>
 
-        {/* Code editor panel — flexible width */}
-        <div className="flex h-full min-w-[400px] flex-1 flex-col border-r border-border">
-          <CodeEditorPanel />
-        </div>
-
-        {/* Slide preview panel */}
-        <div className="flex h-full w-96 min-w-72 flex-col">
-          <SlidePreviewPanel />
-        </div>
+      {/* Status bar */}
+      <div className="relative z-10">
+        <StatusBar />
       </div>
     </div>
   )

@@ -354,3 +354,115 @@
     background-position: 200% 0;
   }
 }
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes expand-width {
+  from {
+    opacity: 0;
+    max-width: 0;
+  }
+  to {
+    opacity: 1;
+    max-width: 100%;
+  }
+}
+
+@keyframes collapse-width {
+  from {
+    opacity: 1;
+    max-width: 100%;
+  }
+  to {
+    opacity: 0;
+    max-width: 0;
+  }
+}
+
+@keyframes subtle-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Panel transition utilities */
+@layer utilities {
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s var(--ease-out-back) forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slide-in-left 0.3s var(--ease-out-back) forwards;
+  }
+
+  .animate-expand {
+    animation: expand-width 0.3s var(--ease-default) forwards;
+  }
+
+  .animate-collapse {
+    animation: collapse-width 0.2s var(--ease-default) forwards;
+  }
+
+  .animate-subtle-bounce {
+    animation: subtle-bounce 0.4s var(--ease-spring);
+  }
+
+  /* Hover lift effect for interactive elements */
+  .hover-lift {
+    transition:
+      transform 0.2s var(--ease-out-back),
+      box-shadow 0.2s var(--ease-default);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .hover-lift:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Focus glow for inputs and buttons */
+  .focus-glow:focus-visible {
+    box-shadow:
+      0 0 0 2px var(--surface-base),
+      0 0 0 4px var(--accent-muted);
+    outline: none;
+  }
+
+  /* Resize handle cursor feedback */
+  .resize-active {
+    cursor: col-resize !important;
+  }
+
+  .resize-active * {
+    cursor: col-resize !important;
+    user-select: none !important;
+  }
+}
