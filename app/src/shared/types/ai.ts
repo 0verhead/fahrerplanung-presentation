@@ -1,0 +1,110 @@
+/**
+ * Shared AI types used across main, preload, and renderer processes.
+ *
+ * These types define the contract for IPC communication between
+ * the renderer (chat UI) and main process (AI SDK pipeline).
+ */
+
+// ---------------------------------------------------------------------------
+// Provider configuration
+// ---------------------------------------------------------------------------
+
+/** Supported AI provider identifiers */
+export type AIProviderType = 'openrouter' | 'anthropic' | 'openai'
+
+/** Configuration for a single AI provider */
+export interface AIProviderConfig {
+  type: AIProviderType
+  apiKey: string
+  /** Model identifier — e.g. "anthropic/claude-sonnet-4-20250514" for OpenRouter */
+  modelId: string
+}
+
+/** Default model per provider */
+export const DEFAULT_MODELS: Record<AIProviderType, string> = {
+  openrouter: 'anthropic/claude-sonnet-4-20250514',
+  anthropic: 'claude-sonnet-4-20250514',
+  openai: 'gpt-4o'
+}
+
+// ---------------------------------------------------------------------------
+// Chat messages (renderer <-> main IPC contract)
+// ---------------------------------------------------------------------------
+
+/**
+ * Simplified message format for IPC transport.
+ * The main process converts these to/from AI SDK's ModelMessage internally.
+ */
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  /** ISO timestamp */
+  createdAt: string
+}
+
+// ---------------------------------------------------------------------------
+// Streaming protocol (main -> renderer)
+// ---------------------------------------------------------------------------
+
+/**
+ * Discriminated union of events streamed from main to renderer during generation.
+ * Sent over IPC as individual messages.
+ */
+export type AIStreamEvent =
+  | { type: 'text-delta'; textDelta: string }
+  | { type: 'tool-call-start'; toolCallId: string; toolName: string }
+  | { type: 'tool-call-result'; toolCallId: string; toolName: string; result: unknown }
+  | { type: 'step-finish'; stepType: string; usage: AIUsageInfo }
+  | { type: 'finish'; finishReason: string; usage: AIUsageInfo; text: string }
+  | { type: 'error'; error: string }
+
+/** Token usage information (mirrors AI SDK v6 LanguageModelUsage naming) */
+export interface AIUsageInfo {
+  inputTokens: number
+  outputTokens: number
+  totalTokens: number
+}
+
+// ---------------------------------------------------------------------------
+// IPC channel names
+// ---------------------------------------------------------------------------
+
+/** All AI-related IPC channel constants */
+export const AI_IPC_CHANNELS = {
+  /** Renderer -> Main: send a chat message */
+  SEND_MESSAGE: 'ai:send-message',
+  /** Main -> Renderer: stream events */
+  STREAM_EVENT: 'ai:stream-event',
+  /** Renderer -> Main: abort current generation */
+  ABORT: 'ai:abort',
+  /** Renderer -> Main: update provider config */
+  SET_PROVIDER: 'ai:set-provider',
+  /** Renderer -> Main: get current provider config */
+  GET_PROVIDER: 'ai:get-provider',
+  /** Renderer -> Main: clear conversation history */
+  CLEAR_HISTORY: 'ai:clear-history',
+  /** Renderer -> Main: get conversation history */
+  GET_HISTORY: 'ai:get-history'
+} as const
+
+// ---------------------------------------------------------------------------
+// IPC request/response payloads
+// ---------------------------------------------------------------------------
+
+/** Payload for ai:send-message */
+export interface SendMessagePayload {
+  message: string
+  /** Optional: override the session's provider for this request */
+  providerConfig?: AIProviderConfig
+}
+
+/** Payload for ai:set-provider */
+export interface SetProviderPayload {
+  config: AIProviderConfig
+}
+
+/** Response for ai:get-provider */
+export interface GetProviderResponse {
+  config: AIProviderConfig | null
+}

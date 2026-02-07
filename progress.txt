@@ -105,3 +105,55 @@
 - The @theme block makes all custom colors/shadows/radii available as Tailwind utilities (e.g., bg-surface-raised, text-accent, shadow-glow)
 - Custom utility classes (text-display-hero, bg-atmosphere, bg-noise, glass, etc.) provide higher-level composition
 - Next tasks can use these tokens freely: state management (zustand), AI SDK integration, panel layouts, etc.
+
+---
+
+## Task 3: Vercel AI SDK integration (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Installed AI SDK dependencies at exact spec versions: `ai@6.0.75`, `@openrouter/ai-sdk-provider@2.1.1`, `@ai-sdk/anthropic@3.0.38`, `@ai-sdk/openai@3.0.26`, `zod@3.25.76`
+- Created shared type system (`app/src/shared/types/ai.ts`) defining the IPC contract: provider config types, chat message format, stream event discriminated union, IPC channel constants, request/response payloads
+- Built provider registry (`app/src/main/ai-provider-registry.ts`) supporting OpenRouter, Anthropic, and OpenAI with instance caching
+- Implemented core `streamText()` pipeline (`app/src/main/ai-service.ts`) with: conversation history management, multi-step agent loop via `stopWhen: stepCountIs(10)`, streaming text deltas, step/finish/error event forwarding, abort support
+- Created IPC handler layer (`app/src/main/ipc.ts`) bridging renderer requests to AI service: send-message, abort, set/get-provider, clear/get-history
+- Updated preload script (`app/src/preload/index.ts`) to expose typed AI API to renderer: `sendMessage()`, `onStreamEvent()`, `abort()`, `setProvider()`, `getProvider()`, `clearHistory()`, `getHistory()`
+- Updated preload type declarations (`app/src/preload/index.d.ts`) with full `EncoreAIApi` interface
+- Wired IPC handlers into main process entry point (`app/src/main/index.ts`)
+- Updated both `tsconfig.node.json` and `tsconfig.web.json` to include `src/shared/**/*`
+
+### Key decisions
+- **AI SDK v6 API changes**: v6 uses `ModelMessage` (not `CoreMessage`), `stopWhen: stepCountIs(n)` (not `maxSteps`), `inputTokens`/`outputTokens` (not `promptTokens`/`completionTokens`), and `LanguageModelUsage` has different field names from earlier versions
+- **IPC architecture**: Uses `ipcMain.on` for fire-and-forget messages (send-message, abort) and `ipcMain.handle` for request/response (set-provider, get-provider, clear-history, get-history). Stream events are pushed from main to renderer via `webContents.send()`
+- **Provider caching**: Provider instances are cached by `type:apiKey` composite key; cache is cleared when provider config changes
+- **Placeholder system prompt**: Basic prompt installed for now; will be replaced by dedicated "AI system prompt" task with full frontend-design skill and react-pptx-extended API reference
+- **No tools yet**: The `streamText()` pipeline is set up for pure text generation; tools will be added in the "AI tool definitions" task
+- **`@ai-sdk/react` not installed**: `useChat()` lives in a separate package (`@ai-sdk/react`) in v6; it will be installed with the Chat Panel task since it's a renderer-side concern
+
+### Files created
+- `app/src/shared/types/ai.ts` — Shared AI types and IPC channel constants
+- `app/src/main/ai-provider-registry.ts` — Provider factory with caching
+- `app/src/main/ai-service.ts` — Core streamText pipeline and conversation management
+- `app/src/main/ipc.ts` — IPC handler registration and cleanup
+
+### Files modified
+- `app/package.json` — Added ai@6.0.75, @openrouter/ai-sdk-provider@2.1.1, @ai-sdk/anthropic@3.0.38, @ai-sdk/openai@3.0.26, zod@3.25.76
+- `app/src/main/index.ts` — Wired in registerAIIpcHandlers, removeAIIpcHandlers, mainWindow lifecycle
+- `app/src/preload/index.ts` — Replaced placeholder with full AI API exposure
+- `app/src/preload/index.d.ts` — Added EncoreAIApi interface and typed Window.api
+- `app/tsconfig.node.json` — Added src/shared/**/* to include paths
+- `app/tsconfig.web.json` — Added src/shared/**/* to include paths
+
+### Verification
+- `npm run typecheck` — PASS (both node and web configs)
+- `npm run lint` — PASS (zero issues)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (main 9.24kB, preload 2.38kB, renderer 536.9kB)
+
+### Notes for next iteration
+- The `Intl.Segmenter` type error in `ai/dist/index.d.ts` is upstream (AI SDK issue); does not affect our code or builds
+- The system prompt is minimal — the "AI system prompt" task should embed the full frontend-design skill, react-pptx-extended API reference, and design best practices from AGENTS.md
+- Tools are not wired yet — the `tools: {}` parameter is commented out in streamText; the "AI tool definitions" task should add Zod-typed tools
+- `@ai-sdk/react` with `useChat()` should be added when building the Chat Panel (renderer-side concern)
+- The IPC streaming architecture is ready: renderer calls `window.api.sendMessage()`, listens via `window.api.onStreamEvent()`, and can abort via `window.api.abort()`

@@ -1,9 +1,12 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { registerAIIpcHandlers, removeAIIpcHandlers } from './ipc'
+
+let mainWindow: BrowserWindow | null = null
 
 function createWindow(): void {
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
@@ -19,7 +22,7 @@ function createWindow(): void {
   })
 
   mainWindow.on('ready-to-show', () => {
-    mainWindow.show()
+    mainWindow!.show()
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -33,6 +36,10 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
 }
 
 app.whenReady().then(() => {
@@ -42,8 +49,8 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // Placeholder IPC handler — will be replaced by AI service IPC
-  ipcMain.on('ping', () => console.log('pong'))
+  // Register AI IPC handlers before creating the window
+  registerAIIpcHandlers(() => mainWindow)
 
   createWindow()
 
@@ -56,4 +63,8 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('will-quit', () => {
+  removeAIIpcHandlers()
 })
