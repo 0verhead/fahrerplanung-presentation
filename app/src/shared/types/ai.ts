@@ -55,9 +55,16 @@ export type AIStreamEvent =
   | { type: 'text-delta'; textDelta: string }
   | { type: 'tool-call-start'; toolCallId: string; toolName: string }
   | { type: 'tool-call-result'; toolCallId: string; toolName: string; result: unknown }
-  | { type: 'step-finish'; stepType: string; usage: AIUsageInfo }
-  | { type: 'finish'; finishReason: string; usage: AIUsageInfo; text: string }
-  | { type: 'error'; error: string }
+  | { type: 'step-start'; stepNumber: number; maxSteps: number }
+  | {
+      type: 'step-finish'
+      stepNumber: number
+      stepType: string
+      usage: AIUsageInfo
+      toolCallCount: number
+    }
+  | { type: 'finish'; finishReason: string; usage: AIUsageInfo; text: string; totalSteps: number }
+  | { type: 'error'; error: string; isRetryable?: boolean }
 
 /** Token usage information (mirrors AI SDK v6 LanguageModelUsage naming) */
 export interface AIUsageInfo {

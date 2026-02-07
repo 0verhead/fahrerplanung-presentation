@@ -251,3 +251,39 @@
 - `web_search` is a stub — the "Settings & configuration" task should add search API key management (Brave Search, Tavily, etc.)
 - The tool event IPC flow is: `createEncoreTools(onToolEvent)` → `onEvent(toolEvent)` in `streamChat()` → `webContents.send(STREAM_EVENT)` → renderer listener
 - The agent loop is now functional for code write/edit/read operations — only compilation preview is pending
+
+---
+
+## Task 6: Multi-step agent loop (COMPLETED)
+**Date:** 2026-02-07
+**Status:** Done
+
+### What was done
+- Enhanced the conversation history management to properly preserve tool calls and results across multi-step agent loops
+- Implemented retry logic with `MAX_TOOL_RETRIES = 2` for tools that fail (plus AI SDK's built-in `maxRetries`)
+- Added step progress tracking with new event types: `step-start` and enhanced `step-finish` with step number, tool call count
+- Updated `AIStreamEvent` type with richer step progress information and `isRetryable` flag for errors
+- Added per-tool retry counting with logging when a tool exceeds retry limit
+- Implemented proper conversation history by appending `response.messages` (includes assistant messages with tool calls and tool messages with results)
+
+### Key decisions
+- **Conversation history via response.messages**: Instead of only appending the final text, we now append all response messages from `event.response.messages`. This includes assistant messages (with tool calls) and tool messages (with results), enabling proper multi-step continuity.
+- **MAX_TOOL_RETRIES = 2**: Tools can fail twice before the AI must try a different approach. Combined with AI SDK's built-in `maxRetries` at the provider level.
+- **Retryable error detection**: Errors containing keywords like "rate limit", "timeout", "network", "503", "429" are marked as retryable so the UI can suggest retry.
+- **Step tracking**: `currentStepNumber` tracks progress across the multi-step loop. `step-start` fires before each step, `step-finish` after.
+- **Tool error handling via results, not throws**: Tools return `{ success: false, error: '...' }` instead of throwing, allowing the AI to read the error and self-correct.
+
+### Files modified
+- `app/src/main/ai-service.ts` — Complete rewrite of `streamChat()` with multi-step support, retry tracking, proper history management
+- `app/src/shared/types/ai.ts` — Enhanced `AIStreamEvent` with `step-start`, richer `step-finish`, and `isRetryable` on errors
+
+### Verification
+- `npm run lint` — PASS (zero issues)
+- `npm run format:check` — PASS
+- `npx electron-vite build` — PASS (main 45.61kB, preload 2.38kB, renderer 536.9kB)
+
+### Notes for next iteration
+- The multi-step loop can now chain: user message → AI plans → write_presentation_code → compile_pptx → check result → edit_presentation_code → recompile → present final
+- The Chat Panel task should consume the new `step-start` and enhanced `step-finish` events to show progress indicators (e.g., "Step 2/10: Compiling...")
+- The error `isRetryable` flag can be used by the UI to show a "Retry" button for transient failures
+- Tool results are now part of conversation history, so the AI can reference previous tool outputs in later steps
